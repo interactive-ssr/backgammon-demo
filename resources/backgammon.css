@@ -1,0 +1,256 @@
+/** BACKGAMMON
+ * The backgammon is the base element mean to contain backgammon-top (top half) and backgammon-bottom (bottom half).
+ * backgammon-bottom and backgammon-top can contain any number of points, bars, and goals.
+ * backgammon-top is reversed so child elements that appear first in it will appear on the right of the board.
+ * For backgammon-bottom, child elements that appear first will appear on the left side of the board.
+ * The width and height of backgammon is suggested to be a 8:7 aspect ratio.
+ * Example starting board with double sixes and custom size and colors:
+<link rel="stylesheet" href="/backgammon.css" />
+<style>
+  backgammon#custom {
+      --black: saddlebrown;
+      --white: beige;
+      --board: darkgoldenrod;
+      background-color: azure;
+  }
+</style>
+<backgammon id="custom">
+  <dice color="black">
+    <span>&#9856;</span>
+    <span>&#9856;</span>
+    <span>&#9856;</span>
+    <span>&#9856;</span>
+  </dice>
+  <backgammon-top>
+    <goal></goal>
+    <point color="black">
+      <pip></pip>
+      <pip></pip>
+    </point>
+    <point></point>
+    <point></point>
+    <point></point>
+    <point></point>
+    <point color="white">
+      <pip></pip>
+      <pip></pip>
+      <pip></pip>
+      <pip></pip>
+      <pip></pip>
+    </point>
+    <bar></bar>
+    <point></point>
+    <point color="white">
+      <pip></pip>
+      <pip></pip>
+      <pip></pip>
+    </point>
+    <point></point>
+    <point></point>
+    <point></point>
+    <point color="black">
+      <pip></pip>
+      <pip></pip>
+      <pip></pip>
+      <pip></pip>
+      <pip></pip>
+    </point>
+  </backgammon-top>
+  <backgammon-bottom>
+    <point color="white">
+      <pip></pip>
+      <pip></pip>
+      <pip></pip>
+      <pip></pip>
+      <pip></pip>
+    </point>
+    <point></point>
+    <point></point>
+    <point></point>
+    <point color="black">
+      <pip></pip>
+      <pip></pip>
+      <pip></pip>
+    </point>
+    <point></point>
+    <bar></bar>
+    <point color="black">
+      <pip></pip>
+      <pip></pip>
+      <pip></pip>
+      <pip></pip>
+      <pip></pip>
+    </point>
+    <point></point>
+    <point></point>
+    <point></point>
+    <point></point>
+    <point color="white">
+      <pip></pip>
+      <pip></pip>
+    </point>
+    <goal></goal>
+  </backgammon-bottom>
+</backgammon>
+ */
+backgammon {
+    /* color of black pips and points */
+    --black: #292929;
+    /* color of white pips and points */
+    --white: #d6d6d6;
+    /* color of the board, bar and goals */
+    --board: #292929;
+    /* the basee z index for the board */
+    --z-index: 0;
+    width: 280px;
+    height: 245px;
+    display: flex;
+    flex-direction: column;
+    border: 8px solid var(--board);
+    position: relative;
+}
+backgammon-top, backgammon-bottom {
+    display: flex;
+    width: 100%;
+    height: 50%;
+
+}
+backgammon-top { flex-direction: row-reverse; align-items: flex-start; }
+backgammon-bottom { flex-direction: row; align-items: flex-end; }
+/** POINT, BAR, and GOAL
+ * Point, bar, and goal all act about the same. They can all contain pips. Point and bar are meant to hold no more than 5 pips.
+ * Goal can contain at least 15 pips. All will be styled based on if they are in backgammon-top or backgammon-bottom.
+ * Whether a point or goal is in the top or bottom board, the last child elements will appear closest to the center of the board.
+ * Bar is reversed to the first child elements will appear at the center of the board.
+ * Attribute "color" determintes the color of the pips inside.
+ * :before and :after selectors must not be used for point since they are used for drawing the point.
+ */
+point, bar, goal {
+    position: relative;
+    width: 7.15%;
+    display: flex;
+    align-items: center;
+}
+point { height: 80%; }
+backgammon-top>point,
+backgammon-bottom>bar,
+backgammon-top>goal
+{ flex-direction: column; }
+backgammon-bottom>point,
+backgammon-top>bar,
+backgammon-bottom>goal
+{ flex-direction: column-reverse; }
+bar { background: var(--board); height: 80%; }
+backgammon-top>bar { align-self: flex-end; padding-top: 10%; }
+backgammon-bottom>bar { align-self: flex-start; padding-bottom: 10%; }
+goal {
+    border: 2px solid var(--board);
+    height: calc(100% - 2px);
+}
+point:before, point:after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+backgammon-top>point:before {
+    z-index: calc(1 + var(--z-index));
+    clip-path: polygon(0 0,50% 100%, 100% 0, 99% 0, 50% 98%, 1% 0);
+    background: var(--board);
+}
+backgammon-top>point:after { z-index: var(--z-index); clip-path: polygon(1% 0, 50% 98%, 99% 0); }
+backgammon-bottom>point:before {
+    z-index: calc(1 + var(--z-index));
+    clip-path: polygon(100% 100%, 99% 100%, 50% 2%, 1% 100%, 0 100%, 50% 0);
+    background: var(--board);
+}
+backgammon-bottom>point:after { z-index: var(--z-index); clip-path: polygon(1% 100%, 50% 2%, 99% 100%); }
+point:nth-of-type(odd):after { background: var(--black); }
+point:nth-of-type(even):after{ background: var(--white); }
+/** PIP
+ * Pips are circle shaped things, and are meant to be contained in points, bars, or goals.
+ * They can contain a small amount of text (usually a number) which will be centered in the middle of the circle and be in the opposite color.
+ */
+pip {
+    z-index: calc(2 + var(--z-index));
+    width: calc(100% - 2px);
+    height: calc(20% - 2px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+point[color="black"] > pip,
+bar[color="black"] > pip,
+goal[color="black"] > pip
+{
+    color: var(--white);
+    background: var(--black);
+    border: 1px solid var(--white);
+}
+point[color="white"] > pip,
+bar[color="white"] > pip,
+goal[color="white"] > pip
+{
+    color: var(--black);
+    background: var(--white);
+    border: 1px solid var(--black);
+}
+pip:hover { box-shadow: 1px 1px 1px #333; }
+pip[selected] { animation: 1.5s pulse linear infinite; }
+goal > pip {
+    border-radius: 0;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    width: 90%;
+    height: 3.5%;
+}
+/** DICE
+ * Meant to contain elements (use <die> tag) that contain dice characters (dice unicode or numbers)
+ * Should be directly inside the backgammon tag.
+ * Atrribute color (white or black) controls the colors of the dice inside.
+ * Not designed to have more than 4 dice.
+ * Child elements can have the "disabled" attribute to grey them out.
+ */
+dice {
+    position: absolute;
+    z-index: var(--z-index);
+    top: calc(50% - .75rem);
+    left: 50%;
+    right: 10%;
+    display: flex;
+    justify-content: center;
+}
+dice > * {
+    padding-left: .2rem;
+    padding-right: .2rem;
+    margin-left: 2px;
+    margin-right: 2px;
+    font-size: 12pt;
+    border: 1px solid var(--board);
+    border-radius: 15%;
+}
+dice[color="black"] > * {
+    color: var(--white);
+    background: var(--black);
+}
+dice[color="white"] > * {
+    color: var(--black);
+    background: var(--white);
+}
+dice > *[disabled] {
+    color: lightgray;
+    background: #808080;
+    border: 1px solid graytext;
+}
+
+@keyframes roll {
+    from {transform: rotate(0deg);}
+    to {transform: rotate(360deg);}
+}
+
+@keyframes pulse {
+    0% {opacity: 100%;}
+    50% {opacity: 40%;}
+    100% {opacity: 100%;}
+}
