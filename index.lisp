@@ -79,34 +79,35 @@
           (remove socket (gethash gameid games)))))
 (pushnew #'remove-player on-disconnect-hook)
 
-(defun segment (game from end pip)
+(deftag segment (&key game from end pip)
   "Return a list of points FROM to END where PIP is the selected pip."
-  (mapcar (lambda (point index)
-            (let ((turn (when (slot-boundp game 'turn) (turn game)))
-                  (move (get-point-move game index pip)))
-              <:point color=(first point)
-                      onclick=(when move "rr(this)")
-                      name="action" value=(when move
-                                            (list (quote move)
-                                                  (list pip move)))
-                      >
-                ,@(when point
-                    (append (loop for p from 1 below (min 5 (second point))
-                                  collect <:pip></:pip>)
-                            (list
-                             <:pip name="action" value=(list (quote pip) index)
-                                   onclick=(when (eq (first point) turn)
-                                             "rr(this)")
-                                   selected=(and (numberp pip)
-                                                 (= pip index)
-                                                 (get-moves game pip))
-                                   >
-                               ,(when (< 5 (second point))
-                                  (second point))
-                             </:pip>)))
-              </:point>))
-          (subseq (points game) from end)
-          (loop :for index :from from :below end :collect index)))
+  <merge-tag>
+    ,@(mapcar (lambda (point index)
+                (let ((turn (when (slot-boundp game 'turn) (turn game)))
+                      (move (get-point-move game index pip)))
+                  <:point color=(first point)
+                          onclick=(when move "rr(this)")
+                          name="action" value=(when move
+                                                (list 'move (list pip move)))
+                          >
+                    ,@(when point
+                        (append (loop for p from 1 below (min 5 (second point))
+                                      collect <:pip></:pip>)
+                                (list
+                                 <:pip name="action" value=(list 'pip index)
+                                       onclick=(when (eq (first point) turn)
+                                                 "rr(this)")
+                                       selected=(and (numberp pip)
+                                                     (= pip index)
+                                                     (get-moves game pip))
+                                       >
+                                   ,(when (< 5 (second point))
+                                      (second point))
+                                 </:pip>)))
+                  </:point>))
+              (subseq (points game) from end)
+              (loop :for index :from from :below end :collect index))
+  </merge-tag>)
 
 (define-easy-handler (backgammon :uri "/backgammon")
     ((action :init-form "") (gameid :init-form "") white-color black-color)
@@ -221,7 +222,7 @@
                       ,@(loop for p from 0 below (white-goal game)
                               collect <:pip></:pip>)
                     </:goal>)
-                 ,@(segment game 0 6 (when (string= action 'pip) info))
+                 <segment game=game from=0 end=6 pip=(when (string= action 'pip) info)/>
                  <:bar color="white">
                    ,@(loop for p from 0 below (white-bar game)
                            collect <:pip name="action" value=(list (quote pip) +white-bar+)
@@ -233,10 +234,10 @@
                                          >
                                    </:pip>)
                  </:bar>
-                 ,@(segment game 6 12 (when (string= action 'pip) info))
+                 <segment game=game from=6 end=12 pip=(when (string= action 'pip) info)/>
                </:backgammon-top>
                <:backgammon-bottom>
-                 ,@(segment game 12 18 (when (string= action 'pip) info))
+                 <segment game=game from=12 end=18 pip=(when (string= action 'pip) info)/>
                  <:bar color="black">
                    ,@(loop for p from 0 below (black-bar game)
                            collect <:pip name="action" value=(list (quote pip) +black-bar+)
@@ -248,7 +249,7 @@
                                          >
                                    </:pip>)
                  </:bar>
-                 ,@(segment game 18 24 (when (string= action 'pip) info))
+                 <segment game=game from=18 end=24 pip=(when (string= action 'pip) info)/>
                  ,(let ((move (get-point-move game +black-goal+ (when (string= action 'pip) info))))
                     <:goal color="black" name="action"
                            value=(list (quote move) (list info move))
