@@ -190,10 +190,9 @@
            </head>
            <body>
              <style>
-               ,(format nil "backgammon {
-                 --white: ~a;
-                 --black: ~a;
-               }" white-color black-color)
+               ,(format nil "#board {--white: ~a; --black: ~a;}#winner {color:~a}"
+                        white-color black-color
+                        (if (eq winner :black) black-color white-color))
              </style>
              <h1>Backgammon</h1>
              <button name="action" value="(roll)"
@@ -260,9 +259,9 @@
                </:backgammon-bottom>
              </:backgammon>
              ,(when winner
-                <h2>,(progn winner) WINS!</h2>)
+                <p id="win-message"><span id="winner">,(progn winner)</span> WINS!</p>)
              <fieldset>
-               <legend>Colors</legend>
+               <legend><b>Colors</b></legend>
                <label for="white-color">White Color:</label>
                <input type="color" name="white-color" value=white-color />
                <br/>
