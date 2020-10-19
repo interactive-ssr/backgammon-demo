@@ -282,10 +282,10 @@
 (bordeaux-threads:make-thread
  (lambda ()
    (dolist (gameid (alexandria:hash-table-keys games))
-     (let ((game (gethash gameid games)))
+     (let ((game (first (gethash gameid games))))
        (when (or (null game)
-                 (< (- 86400
-                       (get-universal-time)
+                 (< 86400
+                    (- (get-universal-time)
                        (time-created game))))
          (remhash gameid games))))
    (sleep 86400))
