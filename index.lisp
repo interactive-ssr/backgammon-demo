@@ -110,7 +110,7 @@
   </merge-tag>)
 
 (define-easy-handler (backgammon :uri "/backgammon")
-    ((action :init-form "") (gameid :init-form "") white-color black-color)
+    (action gameid white-color black-color)
   ;; set colors
   (multiple-value-bind (action info)
       (values-list (handler-case
