@@ -141,8 +141,8 @@ backgammon-top>bar,
 backgammon-bottom>goal
 { flex-direction: column-reverse; }
 bar { background: var(--board); height: 80%; }
-backgammon-top>bar { align-self: flex-end; padding-top: 10%; }
-backgammon-bottom>bar { align-self: flex-start; padding-bottom: 10%; }
+backgammon-top>bar { align-self: flex-end; padding-top: 9%; }
+backgammon-bottom>bar { align-self: flex-start; padding-bottom: 9%; }
 goal {
     border: 2px solid var(--board);
     height: calc(100% - 2px);
