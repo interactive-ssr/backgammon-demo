@@ -217,7 +217,7 @@
                </:dice>
                <:backgammon-top>
                  ,(let ((move (get-point-move game +white-goal+ (when (string= action 'pip) info))))
-                    <:goal color="white" name="action" value=(list (quote move) (list info move))
+                    <:goal color="white" name="action" value=(list 'move (list info move))
                            onclick=(when move "rr(this)")>
                       ,@(loop for p from 0 below (white-goal game)
                               collect <:pip></:pip>)
@@ -225,10 +225,10 @@
                  <segment game=game from=0 end=6 pip=(when (string= action 'pip) info)/>
                  <:bar color="white">
                    ,@(loop for p from 0 below (white-bar game)
-                           collect <:pip name="action" value=(list (quote pip) +white-bar+)
+                           collect <:pip name="action" value=(list 'pip +white-bar+)
                                          onclick="rr(this)"
                                          selected=(and (eq turn :white)
-                                                       (string= action (quote pip))
+                                                       (string= action 'pip)
                                                        (= info +white-bar+)
                                                        (get-moves game info))
                                          >
@@ -240,10 +240,10 @@
                  <segment game=game from=12 end=18 pip=(when (string= action 'pip) info)/>
                  <:bar color="black">
                    ,@(loop for p from 0 below (black-bar game)
-                           collect <:pip name="action" value=(list (quote pip) +black-bar+)
+                           collect <:pip name="action" value=(list 'pip +black-bar+)
                                          onclick="rr(this)"
                                          selected=(and (eq turn :black)
-                                                       (string= action (quote pip))
+                                                       (string= action 'pip)
                                                        (= info +black-bar+)
                                                        (get-moves game info))
                                          >
@@ -252,7 +252,7 @@
                  <segment game=game from=18 end=24 pip=(when (string= action 'pip) info)/>
                  ,(let ((move (get-point-move game +black-goal+ (when (string= action 'pip) info))))
                     <:goal color="black" name="action"
-                           value=(list (quote move) (list info move))
+                           value=(list 'move (list info move))
                            onclick=(when move "rr(this)")>
                       ,@(loop for p from 0 below (black-goal game)
                               collect <:pip></:pip>)
