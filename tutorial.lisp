@@ -196,7 +196,7 @@
                <code>action</code> variable. The <code>value</code> attribute will be
                <code>"(roll)"</code> because we only need to know that the user interactied with the roll dice button, no special information needed.
                Finally, we want the button to be disabled if there are still moves to be made before the next roll. For this we will use the
-               <code>can-move-<strong>p</strong></code> <strong>p</strong>redicate from
+               <code>can-move-<strong>p</strong></code> <strong style="padding-left: .5ch;">p</strong>redicate from
                <code>backgammon.lisp</code> to tell if the player has any moves left.
              </p>
              <code-sample theme=theme >
