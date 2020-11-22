@@ -32,6 +32,7 @@
                <a href="https://github.com/interactive-ssr/client">
                  <abbr title="Interactive Server Side Rendering">ISSR</abbr>
                </a>.
+               You can see the <a href="/backgammon">final product</a> of this tutorial.
              </p>
              <p>
                The full source code for this tutorial is available in the
