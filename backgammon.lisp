@@ -56,7 +56,7 @@
   ((points :initarg :points :reader points :type backgammon-board :initform initial-board)
    (dice :initarg :dice :reader dice :type list :initform '())
    (used-dice :initarg :used-dice :reader used-dice :type list :initform '())
-   (turn :initarg :turn :reader turn :type backgammon-color)
+   (turn :initarg :turn :reader turn :type (or backgammon-color null) :initform nil)
    (white-bar :initarg :white-bar :reader white-bar :type integer :initform 0)
    (black-bar :initarg :black-bar :reader black-bar :type integer :initform 0)
    (white-goal :initarg :white-goal :reader white-goal :type integer :initform 0)
@@ -116,11 +116,11 @@
                                :initial-value 0)))))))
 (defmethod valid-move-p ((game backgammon) point die)
   ;; make sure dice are valid
-  (with-slots (points) game
+  (with-slots (turn points) game
     (let ((color (point-color game point)))
       (and (not (finished-p game))
            point (member die (dice game))
-           (slot-boundp game 'turn)
+           turn
            color (eq color (turn game))
            (if (eq :black color)
                (or (eq 0 (black-bar game))
@@ -144,7 +144,7 @@
                     +black-goal+
                     +white-goal+))))))))
 (defmethod can-move-p ((game backgammon))
-  (and (slot-boundp game 'turn)
+  (and (turn game)
        (or (some (lambda (point index)
                    (and (eq (turn game) (first point))
                         (some (lambda (die)
@@ -160,13 +160,13 @@
                                  die))
                  (dice game)))))
 (defmethod roll-dice ((game backgammon))
-  (if (or (not (slot-boundp game 'turn))
+  (if (or (not (turn game))
           (not (can-move-p game)))
       (multiple-value-bind (new-dice turn)
           (loop
             for d1 = (+ (random 6) 1) ;; white
             for d2 = (+ (random 6) 1) ;; black
-            for turn = (if (slot-boundp game 'turn)
+            for turn = (if (turn game)
                            (if (eq :black (turn game))
                                :white
                                :black)
@@ -255,3 +255,19 @@
                                  combo :initial-value (list game point))
                      combo))
                  combos))))))
+(defmethod get-point-move ((game backgammon) index pip)
+  "Return the roll to move PIP to point INDEX or nil if it is impossible."
+  (and pip (numberp pip) (<= -1 pip 24)
+       (some (lambda (rolls)
+               (when (= (or (second
+                             (reduce (lambda (game--point die)
+                                       (when (and game--point die)
+                                         (multiple-value-bind (game point) (values-list game--point)
+                                           (let ((spot (valid-move-p game point die)))
+                                             (when spot
+                                               (list (move game point die) spot))))))
+                                     rolls :initial-value (list game pip)))
+                            -2)
+                        index)
+                 rolls))
+             (get-moves game pip))))

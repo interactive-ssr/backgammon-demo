@@ -17,14 +17,6 @@
                         :document-root "resources/")
          :ws-port 4433))
 
-(defun box-muller ()
-  (let ((u1 (random 1.0))
-        (u2 (random 1.0)))
-    (let ((R (sqrt (* -2 (log u1))))
-          (Θ (* 2 PI u2)))
-      (values (* R (cos Θ))
-              (* R (sin Θ))))))
-
 (defconstant die-face
   #(#\die_face-1 #\die_face-2 #\die_face-3 #\die_face-4 #\die_face-5 #\die_face-6))
 (defun die-face (n) (aref die-face (- n 1)))
@@ -44,28 +36,13 @@
         while (member alphanum not-these)
         finally (return alphanum)))
 
-(defun get-point-move (game index pip)
-  "Return the roll to move PIP to point INDEX or nil if it is impossible."
-  (and pip (numberp pip) (<= -1 pip 24)
-       (some (lambda (rolls)
-               (when (= (or (second
-                             (reduce (lambda (game--point die)
-                                       (when (and game--point die)
-                                         (multiple-value-bind (game point) (values-list game--point)
-                                           (let ((spot (valid-move-p game point die)))
-                                             (when spot
-                                               (list (move game point die) spot))))))
-                                     rolls :initial-value (list game pip)))
-                            -2)
-                        index)
-                 rolls))
-             (get-moves game pip))))
-
 ;; add player to game
 (defun add-player (socket)
-  (let ((gameid (get-parameter
+  (let ((script (script-name (first (gethash socket *clients*))))
+        (gameid (get-parameter
                  "gameid" (first (gethash socket *clients*)))))
-    (when (and gameid (not (member socket (gethash gameid games))))
+    (when (and script (string= script "/backgammon")
+               gameid (not (member socket (gethash gameid games))))
       (setf (gethash gameid games)
             (append (gethash gameid games)
                     (list socket))))))
@@ -83,7 +60,7 @@
   "Return a list of points FROM to END where PIP is the selected pip."
   <merge-tag>
     ,@(mapcar (lambda (point index)
-                (let ((turn (when (slot-boundp game 'turn) (turn game)))
+                (let ((turn (turn game))
                       (move (get-point-move game index pip)))
                   <:point color=(first point)
                           onclick=(when move "rr(this)")
@@ -93,17 +70,17 @@
                     ,@(when point
                         (append (loop for p from 1 below (min 5 (second point))
                                       collect <:pip></:pip>)
-                                (list
-                                 <:pip name="action" value=(list 'pip index)
-                                       onclick=(when (eq (first point) turn)
-                                                 "rr(this)")
-                                       selected=(and (numberp pip)
-                                                     (= pip index)
-                                                     (get-moves game pip))
-                                       >
-                                   ,(when (< 5 (second point))
-                                      (second point))
-                                 </:pip>)))
+                    (list
+                     <:pip name="action" value=(list 'pip index)
+                           onclick=(when (eq (first point) turn)
+                                     "rr(this)")
+                           selected=(and (numberp pip)
+                                         (= pip index)
+                                         (get-moves game pip))
+                           >
+                       ,(when (< 5 (second point))
+                          (second point))
+                     </:pip>)))
                   </:point>))
               (subseq (points game) from end)
               (loop :for index :from from :below end :collect index))
@@ -116,167 +93,163 @@
       (values-list (handler-case
                        (read-from-string action)
                      (t () nil)))
-  (when (string= action 'save-colors)
-    (set-cookie "white-color"
-                :value white-color
-                :expires (+ (get-universal-time) 604800)
-                :http-only nil)
-    (set-cookie "black-color"
-                :value black-color
-                :expires (+ (get-universal-time) 604800)
-                :http-only nil))
-  ;; get colors
-  (setq white-color (or (when (cookie-out "white-color")
-                          (cookie-value (cookie-out "white-color")))
-                        (cookie-in "white-color")
-                        white-color "#d6d6d6"))
-  (setq black-color (or (when (cookie-out "black-color")
-                          (cookie-value (cookie-out "black-color")))
-                        (cookie-in "black-color")
-                        black-color "#292929"))
-  ;; ensure gameid
-  (unless gameid
-    (redirect (format nil "/backgammon?gameid=~a"
-                      (random-alphanum 8 (alexandria:hash-table-keys games)))))
-  ;; ensure game exists for gameid
-  (unless (gethash gameid games)
-    (setf (gethash gameid games)
-          (list (make-instance 'backgammon)))
-    (when *socket*
-      (add-player *socket*)))
-  ;; roll dice
-  (when (string= action 'roll)
-    (setf (gethash gameid games)
-          (cons (roll-dice (car (gethash gameid games)))
-                (cdr (gethash gameid games)))))
-  ;; move pip
-  (when (string= action 'move)
-    (multiple-value-bind (pip dice) (values-list info)
-      (let ((new-game (reduce (lambda (game--spot die)
-                                (multiple-value-bind (game spot) (values-list game--spot)
-                                  (list (move game spot die)
-                                        (valid-move-p game spot die))))
-                              dice :initial-value (list (first (gethash gameid games)) pip))))
-        (when new-game
-          (setf (gethash gameid games)
-                (cons (first new-game)
-                      (cdr (gethash gameid games))))))))
-  (let ((game (car (gethash gameid games)))
-        (players (cdr (gethash gameid games))))
-    ;; update other players
-    (dolist (player players)
-      (when (and (not (equalp *socket* player))
-                 action (string/= action 'noupdate))
-        (rr player "?action=(noupdate)")))
-    (with-slots (points dice used-dice) game
-      ;; make unified dice list
-      (let ((dice (sort (append (mapcar (lambda (die) (list die nil))
-                                        dice)
-                                (mapcar (lambda (die) (list die t))
-                                        used-dice))
-                        #'< :key #'first))
-            (turn (when (slot-boundp game 'turn)
-                    (turn game)))
-            (winner (finished-p game)))
-        (write-html
-         <html>
-           <head>
-             <link href="backgammon.css" rel="stylesheet"/>
-             <link href="site.css" rel="stylesheet"/>
-             <script src="issr.js"></script>
-             <script noupdate=t >
-               ,(format nil "setup(~a,~a)" *id* *ws-port*)
-             </script>
-             <title>Backgammon -- ISSR</title>
-           </head>
-           <body>
-             <style>
-               ,(format nil "#board {--white: ~a; --black: ~a;}#winner {color:~a}"
-                        white-color black-color
-                        (if (eq winner :black) black-color white-color))
-             </style>
-             <h1>Backgammon</h1>
-             <button name="action" value="(roll)"
-                     onclick="rr(this)"
-                     disabled=(can-move-p game)>
-               Roll Dice
-             </button>
-             <:backgammon id="board">
-               <:dice color=(when turn
-                              (symbol-name (turn game)))
-                      >
-                 ,@(mapcar (lambda (die)
-                             <:die disabled=(or (second die) (not (can-move-p game)))
-                                   style=(when (string= action 'roll)
-                                           (format nil "animation: .25s roll linear ~a;"
-                                                   (min (round (abs (* (box-muller) 5))))))
-                                   >
-                               ,(die-face (first die))
-                             </:die>)
-                           dice)
-               </:dice>
-               <:backgammon-top>
-                 ,(let ((move (get-point-move game +white-goal+ (when (string= action 'pip) info))))
-                    <:goal color="white" name="action" value=(list 'move (list info move))
-                           onclick=(when move "rr(this)")>
-                      ,@(loop for p from 0 below (white-goal game)
-                              collect <:pip></:pip>)
-                    </:goal>)
-                 <segment game=game from=0 end=6 pip=(when (string= action 'pip) info)/>
-                 <:bar color="white">
-                   ,@(loop for p from 0 below (white-bar game)
-                           collect <:pip name="action" value=(list 'pip +white-bar+)
-                                         onclick="rr(this)"
-                                         selected=(and (eq turn :white)
-                                                       (string= action 'pip)
-                                                       (= info +white-bar+)
-                                                       (get-moves game info))
-                                         >
-                                   </:pip>)
-                 </:bar>
-                 <segment game=game from=6 end=12 pip=(when (string= action 'pip) info)/>
-               </:backgammon-top>
-               <:backgammon-bottom>
-                 <segment game=game from=12 end=18 pip=(when (string= action 'pip) info)/>
-                 <:bar color="black">
-                   ,@(loop for p from 0 below (black-bar game)
-                           collect <:pip name="action" value=(list 'pip +black-bar+)
-                                         onclick="rr(this)"
-                                         selected=(and (eq turn :black)
-                                                       (string= action 'pip)
-                                                       (= info +black-bar+)
-                                                       (get-moves game info))
-                                         >
-                                   </:pip>)
-                 </:bar>
-                 <segment game=game from=18 end=24 pip=(when (string= action 'pip) info)/>
-                 ,(let ((move (get-point-move game +black-goal+ (when (string= action 'pip) info))))
-                    <:goal color="black" name="action"
-                           value=(list 'move (list info move))
-                           onclick=(when move "rr(this)")>
-                      ,@(loop for p from 0 below (black-goal game)
-                              collect <:pip></:pip>)
-                    </:goal>)
-               </:backgammon-bottom>
-             </:backgammon>
-             ,(when winner
-                <p id="win-message"><span id="winner">,(progn winner)</span> WINS!</p>)
-             <fieldset>
-               <legend><b>Colors</b></legend>
-               <label for="white-color">White Color:</label>
-               <input type="color" name="white-color" value=white-color />
-               <br/>
-               <label for="black-color">Black Color:</label>
-               <input type="color" name="black-color" value=black-color />
-               <br/>
-               <p>Saving colors uses cookies 🍪</p>
-               <button onclick="rr(this)"
-                       name="action" value="(save-colors)">
-                 Save Colors
+    (when (string= action 'save-colors)
+      (set-cookie "white-color"
+                  :value white-color
+                  :expires (+ (get-universal-time) 604800)
+                  :http-only nil)
+      (set-cookie "black-color"
+                  :value black-color
+                  :expires (+ (get-universal-time) 604800)
+                  :http-only nil))
+    ;; get colors
+    (setq white-color (or (when (cookie-out "white-color")
+                            (cookie-value (cookie-out "white-color")))
+                          (cookie-in "white-color")
+                          white-color "#d6d6d6"))
+    (setq black-color (or (when (cookie-out "black-color")
+                            (cookie-value (cookie-out "black-color")))
+                          (cookie-in "black-color")
+                          black-color "#292929"))
+    ;; ensure gameid
+    (unless gameid
+      (redirect (format nil "/backgammon?gameid=~a"
+                        (random-alphanum 8 (alexandria:hash-table-keys games)))))
+    ;; ensure game exists for gameid
+    (unless (gethash gameid games)
+      (setf (gethash gameid games)
+            (list (make-instance 'backgammon)))
+      (when *socket*
+        (add-player *socket*)))
+    ;; roll dice
+    (when (string= action 'roll)
+      (setf (gethash gameid games)
+            (cons (roll-dice (car (gethash gameid games)))
+                  (cdr (gethash gameid games)))))
+    ;; move pip
+    (when (string= action 'move)
+      (multiple-value-bind (pip dice) (values-list info)
+        (let ((new-game (reduce (lambda (game--spot die)
+                                  (multiple-value-bind (game spot) (values-list game--spot)
+                                    (list (move game spot die)
+                                          (valid-move-p game spot die))))
+                                dice :initial-value (list (first (gethash gameid games)) pip))))
+          (when new-game
+            (setf (gethash gameid games)
+                  (cons (first new-game)
+                        (cdr (gethash gameid games))))))))
+    (let ((game (car (gethash gameid games)))
+          (players (cdr (gethash gameid games))))
+      ;; update other players
+      (dolist (player players)
+        (when (and (not (equalp *socket* player))
+                   action (string/= action 'noupdate))
+          (rr player "?action=(noupdate)")))
+      (with-slots (points dice used-dice turn) game
+        ;; make unified dice list
+        (let ((dice (sort (append (mapcar (lambda (die) (list die nil))
+                                          dice)
+                                  (mapcar (lambda (die) (list die t))
+                                          used-dice))
+                          #'< :key #'first))
+              (winner (finished-p game)))
+          (write-html
+           <html>
+             <head>
+               <link href="backgammon.css" rel="stylesheet"/>
+               <link href="site.css" rel="stylesheet"/>
+               <script src="issr.js"></script>
+               <script noupdate=t >
+                 ,(format nil "setup(~a,~a)" *id* *ws-port*)
+               </script>
+               <title>Backgammon -- ISSR</title>
+             </head>
+             <body>
+               <style>
+                 ,(format nil "#board {--white: ~a; --black: ~a;}#winner {color:~a}"
+                          white-color black-color
+                          (if (eq winner :black) black-color white-color))
+               </style>
+               <h1>Backgammon</h1>
+               <button name="action" value="(roll)"
+                       onclick="rr(this)"
+                       disabled=(can-move-p game)>
+                 Roll Dice
                </button>
-             </fieldset>
-           </body>
-         </html>))))))
+               <:backgammon id="board">
+                 <:dice color=(symbol-name turn)>
+                   ,@(mapcar (lambda (die)
+                               <:die disabled=(or (second die) (not (can-move-p game)))
+                                     style=(when (string= action 'roll)
+                                             (format nil "animation: .25s roll linear ~a;"
+                                                     (+ (random 90) 2)))
+                                     >
+                                 ,(die-face (first die))
+                               </:die>)
+                             dice)
+                 </:dice>
+                 <:backgammon-top>
+                   ,(let ((move (get-point-move game +white-goal+ (when (string= action 'pip) info))))
+                      <:goal color="white" name="action" value=(list 'move (list info move))
+                             onclick=(when move "rr(this)")>
+                        ,@(loop for p from 0 below (white-goal game)
+                                collect <:pip></:pip>)
+                      </:goal>)
+                   <segment game=game from=0 end=6 pip=(when (string= action 'pip) info)/>
+                   <:bar color="white">
+                     ,@(loop for p from 0 below (white-bar game)
+                             collect <:pip name="action" value=(list 'pip +white-bar+)
+                                           onclick="rr(this)"
+                                           selected=(and (eq turn :white)
+                                                         (string= action 'pip)
+                                                         (= info +white-bar+)
+                                                         (get-moves game info))
+                                           >
+                                     </:pip>)
+                   </:bar>
+                   <segment game=game from=6 end=12 pip=(when (string= action 'pip) info)/>
+                 </:backgammon-top>
+                 <:backgammon-bottom>
+                   <segment game=game from=12 end=18 pip=(when (string= action 'pip) info)/>
+                   <:bar color="black">
+                     ,@(loop for p from 0 below (black-bar game)
+                             collect <:pip name="action" value=(list 'pip +black-bar+)
+                                           onclick="rr(this)"
+                                           selected=(and (eq turn :black)
+                                                         (string= action 'pip)
+                                                         (= info +black-bar+)
+                                                         (get-moves game info))
+                                           >
+                                     </:pip>)
+                   </:bar>
+                   <segment game=game from=18 end=24 pip=(when (string= action 'pip) info)/>
+                   ,(let ((move (get-point-move game +black-goal+ (when (string= action 'pip) info))))
+                      <:goal color="black" name="action"
+                             value=(list 'move (list info move))
+                             onclick=(when move "rr(this)")>
+                        ,@(loop for p from 0 below (black-goal game)
+                                collect <:pip></:pip>)
+                      </:goal>)
+                 </:backgammon-bottom>
+               </:backgammon>
+               ,(when winner
+                  <p id="win-message"><span id="winner">,(progn winner)</span> WINS!</p>)
+               <fieldset>
+                 <legend><b>Colors</b></legend>
+                 <label for="white-color">White Color:</label>
+                 <input type="color" name="white-color" value=white-color />
+                 <br/>
+                 <label for="black-color">Black Color:</label>
+                 <input type="color" name="black-color" value=black-color />
+                 <br/>
+                 <p>Saving colors saves a file on your computer 🍪</p>
+                 <button onclick="rr(this)"
+                         name="action" value="(save-colors)">
+                   Save Colors
+                 </button>
+               </fieldset>
+             </body>
+           </html>))))))
 
 ;; delete old backgammon games
 (bordeaux-threads:make-thread
@@ -290,3 +263,5 @@
          (remhash gameid games))))
    (sleep 86400))
  :name "cleanup backgammon games")
+
+(load (make-pathname :name "tutorial" :type "lisp"))
