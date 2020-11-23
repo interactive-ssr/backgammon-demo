@@ -181,8 +181,8 @@
                    ,@(mapcar (lambda (die)
                                <:die disabled=(or (second die) (not (can-move-p game)))
                                      style=(when (string= action 'roll)
-                                             (format nil "animation: .25s roll linear ~a;"
-                                                     (+ (random 90) 2)))
+                                             (format nil "animation: .1s roll linear ~a;"
+                                                     (+ (random 8) 2)))
                                      >
                                  ,(die-face (first die))
                                </:die>)
