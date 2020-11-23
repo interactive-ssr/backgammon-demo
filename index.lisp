@@ -106,11 +106,11 @@
     (setq white-color (or (when (cookie-out "white-color")
                             (cookie-value (cookie-out "white-color")))
                           (cookie-in "white-color")
-                          white-color "#d6d6d6"))
+                          "#d6d6d6"))
     (setq black-color (or (when (cookie-out "black-color")
                             (cookie-value (cookie-out "black-color")))
                           (cookie-in "black-color")
-                          black-color "#292929"))
+                          "#292929"))
     ;; ensure gameid
     (unless gameid
       (redirect (format nil "/backgammon?gameid=~a"
