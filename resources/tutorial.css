@@ -21,6 +21,8 @@ hr {
 p {
     font-size: medium;
     line-height: 1.3em;
+    text-align: justify;
+    text-justify: inter-word;
 }
 
 div.code-sample {

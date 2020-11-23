@@ -51,9 +51,7 @@
              <p>
                You will need a
                <a href="http://lisp-lang.org">Common Lisp</a>
-               implemention (I'm using
-               <a href="http://sbcl.org">SBCL</a>
-               ),
+               implemention (I'm using <a href="http://sbcl.org">SBCL</a>),
                <a href="http://quicklisp.org">Quicklisp</a>
                , decent knowledge of HTML, and basic knowledge of Lisp. You do
                <em>not</em>
