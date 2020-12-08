@@ -63,21 +63,20 @@
                 (let ((turn (turn game))
                       (move (get-point-move game index pip)))
                   <:point color=(first point)
-                          onclick=(when move "rr(this)")
                           name="action" value=(when move
                                                 (list 'move (list pip move)))
-                          >
+                          onclick=(when move "rr(this)")>
                     ,@(when point
                         (append (loop for p from 1 below (min 5 (second point))
                                       collect <:pip></:pip>)
                     (list
-                     <:pip name="action" value=(list 'pip index)
+                     <:pip name="action"
                            onclick=(when (eq (first point) turn)
                                      "rr(this)")
                            selected=(and (numberp pip)
                                          (= pip index)
                                          (get-moves game pip))
-                           >
+                           value=(list 'pip index)>
                        ,(when (< 5 (second point))
                           (second point))
                      </:pip>)))
@@ -162,7 +161,7 @@
                <link href="backgammon.css" rel="stylesheet"/>
                <link href="site.css" rel="stylesheet"/>
                <script src="issr.js"></script>
-               <script noupdate=t >
+               <script noupdate="t">
                  ,(format nil "setup(~a,~a)" *id* *ws-port*)
                </script>
                <title>Backgammon -- ISSR</title>
@@ -182,13 +181,12 @@
                <:backgammon id="board">
                  <:dice color=(symbol-name turn)>
                    ,@(mapcar (lambda (die)
-                               <:die disabled=(or (second die) (not (can-move-p game)))
-                                     style=(when (or (string= action 'roll)
+                               <:die style=(when (or (string= action 'roll)
                                                      (and (null action)
                                                           (string= info 'roll)))
                                              (format nil "animation: .1s roll linear ~a;"
                                                      (+ (random 8) 2)))
-                                     >
+                                     disabled=(or (second die) (not (can-move-p game)))>
                                  ,(die-face (first die))
                                </:die>)
                              dice)
@@ -204,12 +202,11 @@
                    <:bar color="white">
                      ,@(loop for p from 0 below (white-bar game)
                              collect <:pip name="action" value=(list 'pip +white-bar+)
-                                           onclick="rr(this)"
                                            selected=(and (eq turn :white)
                                                          (string= action 'pip)
                                                          (= info +white-bar+)
                                                          (get-moves game info))
-                                           >
+                                           onclick="rr(this)">
                                      </:pip>)
                    </:bar>
                    <segment game=game from=6 end=12 pip=(when (string= action 'pip) info)/>
@@ -219,12 +216,11 @@
                    <:bar color="black">
                      ,@(loop for p from 0 below (black-bar game)
                              collect <:pip name="action" value=(list 'pip +black-bar+)
-                                           onclick="rr(this)"
                                            selected=(and (eq turn :black)
                                                          (string= action 'pip)
                                                          (= info +black-bar+)
                                                          (get-moves game info))
-                                           >
+                                           onclick="rr(this)">
                                      </:pip>)
                    </:bar>
                    <segment game=game from=18 end=24 pip=(when (string= action 'pip) info)/>
