@@ -89,10 +89,10 @@
 (define-easy-handler (backgammon :uri "/backgammon")
     (action gameid white-color black-color)
   ;; set colors
-  (destructuring-bind (action info)
-      (handler-case
-          (read-from-string action)
-        (t () nil))
+  (multiple-value-bind (action info)
+      (values-list (handler-case
+                       (read-from-string action)
+                     (t () nil)))
     (when (string= action 'save-colors)
       (set-cookie "white-color"
                   :value white-color
@@ -128,9 +128,9 @@
                   (cdr (gethash gameid games)))))
     ;; move pip
     (when (string= action 'move)
-      (destructuring-bind (pip dice) info
+      (multiple-value-bind (pip dice) (values-list info)
         (let ((new-game (reduce (lambda (game--spot die)
-                                  (destructuring-bind (game spot) game--spot
+                                  (multiple-value-bind (game spot) (values-list game--spot)
                                     (list (move game spot die)
                                           (valid-move-p game spot die))))
                                 dice :initial-value (list (first (gethash gameid games)) pip))))

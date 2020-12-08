@@ -262,7 +262,7 @@
                (when (= (or (second
                              (reduce (lambda (game--point die)
                                        (when (and game--point die)
-                                         (destructuring-bind (game point) game--point
+                                         (multiple-value-bind (game point) (values-list game--point)
                                            (let ((spot (valid-move-p game point die)))
                                              (when spot
                                                (list (move game point die) spot))))))
