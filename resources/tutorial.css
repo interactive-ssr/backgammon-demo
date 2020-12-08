@@ -1,3 +1,4 @@
+html {font-size: 1vw;}
 * {font-family: sans-serif;}
 
 body {
@@ -76,6 +77,7 @@ button.toggle-theme {
     grid-column: 2;
     background: #efefef;
     border: 1px black dotted;
+    box-shadow: 0 0 8px darkblue;
 
     padding: .5rem;
     overflow: auto;
