@@ -143,8 +143,11 @@
       ;; update other players
       (dolist (player players)
         (when (and (not (equalp *socket* player))
-                   action (string/= action 'noupdate))
-          (rr player "?action=(noupdate)")))
+                   action)
+          (rr player (format nil "?action=~a"
+                             (if (string= action 'roll)
+                                 '(nil roll)
+                                 '(nil))))))
       (with-slots (points dice used-dice turn) game
         ;; make unified dice list
         (let ((dice (sort (append (mapcar (lambda (die) (list die nil))
@@ -180,7 +183,9 @@
                  <:dice color=(symbol-name turn)>
                    ,@(mapcar (lambda (die)
                                <:die disabled=(or (second die) (not (can-move-p game)))
-                                     style=(when (string= action 'roll)
+                                     style=(when (or (string= action 'roll)
+                                                     (and (null action)
+                                                          (string= info 'roll)))
                                              (format nil "animation: .1s roll linear ~a;"
                                                      (+ (random 8) 2)))
                                      >
