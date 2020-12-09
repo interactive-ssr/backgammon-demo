@@ -63,23 +63,24 @@
                 (let ((turn (turn game))
                       (move (get-point-move game index pip)))
                   <:point color=(first point)
-                          name="action" value=(when move
-                                                (list 'move (list pip move)))
+                          name="action"
+                          value=(when move
+                                  (list 'move (list pip move)))
                           onclick=(when move "rr(this)")>
                     ,@(when point
                         (append (loop for p from 1 below (min 5 (second point))
                                       collect <:pip></:pip>)
-                    (list
-                     <:pip name="action"
-                           onclick=(when (eq (first point) turn)
-                                     "rr(this)")
-                           selected=(and (numberp pip)
-                                         (= pip index)
-                                         (get-moves game pip))
-                           value=(list 'pip index)>
-                       ,(when (< 5 (second point))
-                          (second point))
-                     </:pip>)))
+                                (list
+                                 <:pip name="action"
+                                       onclick=(when (eq (first point) turn)
+                                                 "rr(this)")
+                                       selected=(and (numberp pip)
+                                                     (= pip index)
+                                                     (get-moves game pip))
+                                       value=(list 'pip index)>
+                                   ,(when (< 5 (second point))
+                                      (second point))
+                                 </:pip>)))
                   </:point>))
               (subseq (points game) from end)
               (loop :for index :from from :below end :collect index))
@@ -149,7 +150,8 @@
                                  '(nil))))))
       (with-slots (points dice used-dice turn) game
         ;; make unified dice list
-        (let ((dice (sort (append (mapcar (lambda (die) (list die nil))
+        (let (;; define variables here
+              (dice (sort (append (mapcar (lambda (die) (list die nil))
                                           dice)
                                   (mapcar (lambda (die) (list die t))
                                           used-dice))
