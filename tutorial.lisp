@@ -3,7 +3,9 @@
     <button class="toggle-theme"
             name="action" value=(if (eq theme :dark) "light" "dark")
             onclick="rr(this)">
-      ,(if (eq theme :dark) "🌞" "🌚")
+      ,(if (eq theme :dark)
+           #\sun_with_face
+           #\new_moon_with_face)
     </button>
     <pre>,@children </pre>
   </div>)
@@ -18,9 +20,9 @@
                ,(unescaped
                  (uiop:read-file-string
                   (if (eq theme :dark)
-                      #|load dark css|#
+                      ;; load dark css
                       "resources/dark.css"
-                      #|load light css|#
+                      ;; load light css
                       "resources/light.css")))
              </style>
              <h1>
@@ -37,7 +39,7 @@
              <p>
                The full source code for this tutorial is available in the
                <a href="https://github.com/interactive-ssr/backgammon-demo">git repository</a>. 
-               This tutorial is not a Lisp, HTML, or CSS tutorial, so I will be providing the css and most of the Lisp. It is primarly to teach how to use the ISSR framework. That said, This tutorial is using the Hunchenissr implementation, so there will be a decent amount of Lisp and you should know the basics. The directory structure for this tutorial is like so. Everything in this tutorial will be in one file:
+               This tutorial is not a Lisp, HTML, or CSS tutorial, so I will be providing the CSS and most of the Lisp. It is primarly to teach how to use the ISSR framework. That said, This tutorial is using the Hunchenissr implementation, so there will be a decent amount of Lisp and you should know the basics. The directory structure for this tutorial is like so. Everything in this tutorial will be in one file:
                <code>index.lisp</code>.
              </p>
              <code-sample theme=theme >backgammon-tutorial         
@@ -53,7 +55,11 @@
                <a href="http://lisp-lang.org">Common Lisp</a>
                implemention (I'm using <a href="http://sbcl.org">SBCL</a>),
                <a href="http://quicklisp.org">Quicklisp</a>
-               , decent knowledge of HTML, and basic knowledge of Lisp. You do
+               , decent knowledge of HTML, and basic knowledge of Lisp. Quicklisp will get all the dependencies except
+               <a href="https://github.com/sionescu/libfixposix">libfixposix</a>
+               which should be available from your Operating System's package manager;
+               make sure to get the development version that has the C header files.
+               You do
                <em>not</em>
                need to know CSS, or the rules of
                <a href="http://wikipedia.org/wiki/Backgammon">Backgammon</a>.
@@ -62,14 +68,16 @@
              <h2>Setup</h2>
              <p>
                First, we need to load the required packages and bundle them into into our own backgammon tutorial package. We will use quicklisp to load the
-               <code>hunchenissr</code>
-               package which is what this tutorial is for (this will also load
-               <code>hunchentoot</code>
-               our HTTP server) and the
+               Hunchenissr package which is what this tutorial is for (this will also load Hunchentoot our HTTP server) and the
                <code>markup</code>
-               package which lets us write HTML directly in Lisp. The
+               package which lets us write HTML directly in Lisp.
+               Since Hunchenissr isn't on Quicklisp yet, just
+               <a href="https://github.com/interactive-ssr/hunchenissr/archive/master.zip">download</a>
+               the repository to
+               <code>~/quicklisp/local-projects/hunchenissr</code>.
+               The
                <code>shadowing-import-from</code>
-               tells lisp to use the ISSR versions of those functions instead of the Hunchentoot versions.
+               tells Lisp to use the ISSR versions of those functions instead of the Hunchentoot versions.
              </p>
              <code-sample theme=theme >
 <span class="rainbow-delimiters-depth-1">(</span>mapc <span class="extra">#'</span>ql:quickload <span class="extra">'</span><span class="rainbow-delimiters-depth-2">(</span>hunchenissr markup<span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span>
@@ -148,7 +156,8 @@
                        <span class="rainbow-delimiters-depth-5">(</span>read-from-string action<span class="rainbow-delimiters-depth-5">)</span>
                      <span class="rainbow-delimiters-depth-5">(</span>t <span class="rainbow-delimiters-depth-6">()</span> nil<span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span>
     <span class="comment-delimiter">,(progn ";;") </span><span class="comment">more Lisp goes here
-</span>    <span class="rainbow-delimiters-depth-3">(</span><span class="keyword">let</span> <span class="rainbow-delimiters-depth-4">(</span><span class="comment">#|define variables here|#</span><span class="rainbow-delimiters-depth-4">)</span>
+</span>    <span class="rainbow-delimiters-depth-3">(</span><span class="keyword">let</span> <span class="rainbow-delimiters-depth-4">(</span><span class="comment">,(progn ";;") define variables here</span>
+          <span class="rainbow-delimiters-depth-4">)</span>
       <span class="rainbow-delimiters-depth-4">(</span>write-html
        ,(progn "<")<span class="function-name">html</span>,(progn ">")
          ,(progn "<")<span class="function-name">head</span>,(progn ">")
@@ -257,7 +266,7 @@
            ,(format nil "setup(~a,~a)" *id* *ws-port*)
          </script>
          <link href="tutorial.css" rel="stylesheet"/>
-         <title>Backgammon Tutorial -- ISSR</title>
+         <title>ISSR Tutorial: Backgammon</title>
        </head>
        ,(progn body)
      </html>)))

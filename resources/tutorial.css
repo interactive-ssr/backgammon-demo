@@ -53,7 +53,6 @@ code {
     background: #eee;
     border: 1px #ddd solid;
     border-radius: 5px;
-    word-break: keep-all;
 }
 
 div.code-sample {
@@ -76,7 +75,6 @@ button.toggle-theme {
     border-radius: 5px;
     grid-column: 2;
     background: #efefef;
-    border: 1px black dotted;
     box-shadow: 0 0 8px darkblue;
 
     padding: .5rem;
