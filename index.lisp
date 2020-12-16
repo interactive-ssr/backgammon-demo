@@ -64,7 +64,7 @@
              (let ((turn (turn game))
                    (move (get-point-move game index pip)))
                <:point color=(first point)
-                       name="action"
+                       action="action"
                        value=(when move
                                (list 'move (list pip move)))
                        onclick=(when move "rr(this)")>
@@ -72,7 +72,7 @@
                      (append (loop for p from 1 below (min 5 (second point))
                                    collect <:pip></:pip>)
                              (list
-                              <:pip name="action"
+                              <:pip action="action"
                                     onclick=(when (eq (first point) turn)
                                               "rr(this)")
                                     selected=(and (numberp pip)
@@ -176,7 +176,8 @@
                           (if (eq winner :black) black-color white-color))
                </style>
                <h1>Backgammon</h1>
-               <button name="action" value="(roll)"
+               <button action="action"
+                       value="(roll)"
                        onclick="rr(this)"
                        disabled=(can-move-p game)>
                  Roll Dice
@@ -198,7 +199,7 @@
                    ,(let ((move (get-point-move game +white-goal+
                                                 (when (string= action 'pip)
                                                   info))))
-                      <:goal color="white" name="action" value=(list 'move (list info move))
+                      <:goal color="white" action="action" value=(list 'move (list info move))
                              onclick=(when move "rr(this)")>
                         ,@(loop for p from 0 below white-goal
                                 collect <:pip></:pip>)
@@ -206,7 +207,7 @@
                    <segment game=game from=0 end=6 pip=(when (string= action 'pip) info)/>
                    <:bar color="white">
                      ,@(loop for p from 0 below white-bar
-                             collect <:pip name="action" value=(list 'pip +white-bar+)
+                             collect <:pip action="action" value=(list 'pip +white-bar+)
                                            selected=(and (eq turn :white)
                                                          (string= action 'pip)
                                                          (= info +white-bar+)
@@ -220,7 +221,7 @@
                    <segment game=game from=12 end=18 pip=(when (string= action 'pip) info)/>
                    <:bar color="black">
                      ,@(loop for p from 0 below black-bar
-                             collect <:pip name="action" value=(list 'pip +black-bar+)
+                             collect <:pip action="action" value=(list 'pip +black-bar+)
                                            selected=(and (eq turn :black)
                                                          (string= action 'pip)
                                                          (= info +black-bar+)
@@ -230,7 +231,7 @@
                    </:bar>
                    <segment game=game from=18 end=24 pip=(when (string= action 'pip) info)/>
                    ,(let ((move (get-point-move game +black-goal+ (when (string= action 'pip) info))))
-                      <:goal color="black" name="action"
+                      <:goal color="black" action="action"
                              value=(list 'move (list info move))
                              onclick=(when move "rr(this)")>
                         ,@(loop for p from 0 below black-goal
@@ -249,8 +250,9 @@
                  <input type="color" name="black-color" value=black-color />
                  <br/>
                  <p>Saving colors saves a file on your computer 🍪</p>
-                 <button onclick="rr(this)"
-                         name="action" value="(save-colors)">
+                 <button action="action"
+                         value="(save-colors)"
+                         onclick="rr(this)">
                    Save Colors
                  </button>
                </fieldset>
