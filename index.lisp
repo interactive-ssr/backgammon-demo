@@ -24,8 +24,8 @@
 (defparameter games (make-hash-table :test #'equalp)
   "Key: gameid, Value: (list backgammon players...)")
 
-(defun random-alphanum (length &optional not-these)
-  "Return alphanumeric string of length LENGTH not contained in NOT-THESE."
+(defun random-alphanum (length &key not-in)
+  "Return alphanumeric string of length LENGTH not contained in NOT-IN."
   (loop with alphanum
           = (map 'string #'code-char
                  (loop for n from 1 to length
@@ -33,7 +33,7 @@
                        (if (zerop (random 2))
                            (+ (random 10) 48)
                            (+ (random 26) 97))))
-        while (member alphanum not-these)
+        while (member alphanum not-in)
         finally (return alphanum)))
 
 ;; add player to game
@@ -115,7 +115,7 @@
     ;; ensure gameid
     (unless gameid
       (redirect (format nil "/backgammon?gameid=~a"
-                        (random-alphanum 8 (alexandria:hash-table-keys games)))))
+                        (random-alphanum 8 :not-in (alexandria:hash-table-keys games)))))
     ;; ensure game exists for gameid
     (unless (gethash gameid games)
       (setf (gethash gameid games)
