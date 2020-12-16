@@ -14,21 +14,21 @@
                             :test #'sum=)
                      :test #'sum=))))
 
-(defun backgammon-color-p (keyword)
-  (member keyword '(:black :white)))
 (deftype backgammon-color ()
-  '(and keyword (satisfies backgammon-color-p)))
+  '(member :white :black))
+(defun backgammon-color-p (keyword)
+  (typep keyword 'backgammon-color))
 
-(defun backgammon-board-p (list)
-  (and (listp list) (= 24 (length list))
+(defun backgammon-board-p (board)
+  (and (vectorp board) (= 24 (length board))
        (every (lambda (point)
                  (or (null point)
                      (and (consp point)
                           (backgammon-color-p (first point))
                           (integerp (second point)))))
-              list)))
+              board)))
 (deftype backgammon-board ()
-  '(and list (satisfies backgammon-board-p)))
+  '(and vector (satisfies backgammon-board-p)))
 
 (defconstant +white-bar+ 24)
 (defconstant +white-goal+ -1)
@@ -37,7 +37,7 @@
 (defconstant +total-pips+ 15)
 
 (defparameter initial-board
-  '((:black 2)
+  #((:black 2)
     () () () ()
     (:white 5)
     ()
@@ -72,7 +72,7 @@
         ((and (= +white-bar+ point))
          (when (< 0 (white-bar game))
            :white))
-        (:else (first (nth point (points game))))))
+        (:else (first (elt (points game) point)))))
 (defmethod all-home-p ((game backgammon) color)
   (let ((home (apply #'subseq (points game)
                      (if (eq :black color)
@@ -90,12 +90,12 @@
 (defmethod valid-goal-p ((game backgammon) point die)
   (and point (member die (dice game))
        (<= 0 point 23)
-       (nth point (points game))
+       (elt (points game) point)
        (or (<= point 6)
            (<= 18 point))
        (not (or (< point 0)
                 (< 23 point)))
-       (let* ((color (first (nth point (points game))))
+       (let* ((color (first (elt (points game) point)))
               (home (apply #'subseq (points game)
                            (if (eq :black color)
                                '(18)
@@ -133,10 +133,10 @@
              (cond
                ;; regular move
                ((and (<= 0 new-point 23)
-                     (or (null (nth new-point points))
-                         (eq (first (nth new-point points))
+                     (or (null (elt points new-point))
+                         (eq (first (elt points new-point))
                              color)
-                         (< (second (nth new-point points)) 2)))
+                         (< (second (elt points new-point)) 2)))
                 new-point)
                ;; goal
                ((valid-goal-p game point die)
@@ -200,19 +200,20 @@
                                :black))))
           (make-instance
            'backgammon
-           :points (mapcar (lambda (current-point index)
-                             (cond
-                               ((= index point)
-                                (when (< 0 (- (second current-point) 1))
-                                  (list color (- (second current-point) 1))))
-                               ((= index new-point)
-                                (list color (+ (if (eq color new-color)
-                                                   (second current-point)
-                                                   0)
-                                               1)))
-                               (:else current-point)))
-                           points
-                           (loop for n from 0 to 23 collect n))
+           :points (map 'vector
+                        (lambda (current-point index)
+                          (cond
+                            ((= index point)
+                             (when (< 0 (- (second current-point) 1))
+                               (list color (- (second current-point) 1))))
+                            ((= index new-point)
+                             (list color (+ (if (eq color new-color)
+                                                (second current-point)
+                                                0)
+                                            1)))
+                            (:else current-point)))
+                        points
+                        (loop for n from 0 to 23 collect n))
            :dice (remove die (dice game) :count 1)
            :used-dice (cons die (used-dice game))
            :turn turn

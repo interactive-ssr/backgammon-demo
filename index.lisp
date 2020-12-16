@@ -59,29 +59,30 @@
 (deftag segment (&key game from end pip)
   "Return a list of points FROM to END where PIP is the selected pip."
   <merge-tag>
-    ,@(mapcar (lambda (point index)
-                (let ((turn (turn game))
-                      (move (get-point-move game index pip)))
-                  <:point color=(first point)
-                          name="action"
-                          value=(when move
-                                  (list 'move (list pip move)))
-                          onclick=(when move "rr(this)")>
-                    ,@(when point
-                        (append (loop for p from 1 below (min 5 (second point))
-                                      collect <:pip></:pip>)
-                                (list
-                                 <:pip name="action"
-                                       onclick=(when (eq (first point) turn)
-                                                 "rr(this)")
-                                       selected=(and (numberp pip)
-                                                     (= pip index)
-                                                     (get-moves game pip))
-                                       value=(list 'pip index)>
-                                   ,(when (< 5 (second point))
-                                      (second point))
-                                 </:pip>)))
-                  </:point>))
+    ,@(map 'list
+           (lambda (point index)
+             (let ((turn (turn game))
+                   (move (get-point-move game index pip)))
+               <:point color=(first point)
+                       name="action"
+                       value=(when move
+                               (list 'move (list pip move)))
+                       onclick=(when move "rr(this)")>
+                 ,@(when point
+                     (append (loop for p from 1 below (min 5 (second point))
+                                   collect <:pip></:pip>)
+                             (list
+                              <:pip name="action"
+                                    onclick=(when (eq (first point) turn)
+                                              "rr(this)")
+                                    selected=(and (numberp pip)
+                                                  (= pip index)
+                                                  (get-moves game pip))
+                                    value=(list 'pip index)>
+                                ,(when (< 5 (second point))
+                                   (second point))
+                              </:pip>)))
+               </:point>))
               (subseq (points game) from end)
               (loop :for index :from from :below end :collect index))
   </merge-tag>)
