@@ -149,7 +149,7 @@
                              (if (string= action 'roll)
                                  '(nil roll)
                                  '(nil))))))
-      (with-slots (points dice used-dice turn) game
+      (with-slots (points dice used-dice turn white-goal white-bar black-goal black-bar) game
         ;; make unified dice list
         (let (;; define variables here
               (dice (sort (append (mapcar (lambda (die) (list die nil))
@@ -195,15 +195,17 @@
                              dice)
                  </:dice>
                  <:backgammon-top>
-                   ,(let ((move (get-point-move game +white-goal+ (when (string= action 'pip) info))))
+                   ,(let ((move (get-point-move game +white-goal+
+                                                (when (string= action 'pip)
+                                                  info))))
                       <:goal color="white" name="action" value=(list 'move (list info move))
                              onclick=(when move "rr(this)")>
-                        ,@(loop for p from 0 below (white-goal game)
+                        ,@(loop for p from 0 below white-goal
                                 collect <:pip></:pip>)
                       </:goal>)
                    <segment game=game from=0 end=6 pip=(when (string= action 'pip) info)/>
                    <:bar color="white">
-                     ,@(loop for p from 0 below (white-bar game)
+                     ,@(loop for p from 0 below white-bar
                              collect <:pip name="action" value=(list 'pip +white-bar+)
                                            selected=(and (eq turn :white)
                                                          (string= action 'pip)
@@ -217,7 +219,7 @@
                  <:backgammon-bottom>
                    <segment game=game from=12 end=18 pip=(when (string= action 'pip) info)/>
                    <:bar color="black">
-                     ,@(loop for p from 0 below (black-bar game)
+                     ,@(loop for p from 0 below black-bar
                              collect <:pip name="action" value=(list 'pip +black-bar+)
                                            selected=(and (eq turn :black)
                                                          (string= action 'pip)
@@ -231,7 +233,7 @@
                       <:goal color="black" name="action"
                              value=(list 'move (list info move))
                              onclick=(when move "rr(this)")>
-                        ,@(loop for p from 0 below (black-goal game)
+                        ,@(loop for p from 0 below black-goal
                                 collect <:pip></:pip>)
                       </:goal>)
                  </:backgammon-bottom>
