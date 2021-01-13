@@ -1,15 +1,28 @@
-(mapc #'ql:quickload '(hunchenissr markup))
+(ql:quickload '(hunchenissr markup))
 (defpackage backgammon
-  (:use #:cl #:hunchentoot #:hunchenissr #:markup)
-  (:shadowing-import-from #:hunchenissr
-   :define-easy-handler
-   :start
-   :stop
-   :redirect))
+  (:use #:cl #:markup)
+  (:import-from #:hunchentoot
+                easy-acceptor
+                set-cookie
+                cookie-value
+                cookie-in
+                cookie-out
+                get-parameter
+                script-name)
+  (:import-from #:hunchenissr
+                define-easy-handler
+                *id*
+                *socket*
+                *ws-port*
+                start
+                stop
+                redirect
+                -on-connect-hook-
+                -on-disconnect-hook-))
 (in-package #:backgammon)
 (markup:enable-reader)
 
-(load (make-pathname :name "backgammon" :type "lisp"))
+(load "backgammon.lisp")
 
 (defparameter server
   (start (make-instance 'easy-acceptor
@@ -17,9 +30,9 @@
                         :document-root "resources/")
          :ws-port 4433))
 
-(defconstant die-face
+(defconstant die-faces
   #(#\die_face-1 #\die_face-2 #\die_face-3 #\die_face-4 #\die_face-5 #\die_face-6))
-(defun die-face (n) (aref die-face (- n 1)))
+(defun die-face (n) (elt die-faces (- n 1)))
 
 (defparameter games (make-hash-table :test #'equalp)
   "Key: gameid, Value: (list backgammon players...)")
@@ -38,23 +51,23 @@
 
 ;; add player to game
 (defun add-player (socket)
-  (let ((script (script-name (first (gethash socket *clients*))))
+  (let ((script (script-name (first (gethash socket hunchenissr:-clients-))))
         (gameid (get-parameter
-                 "gameid" (first (gethash socket *clients*)))))
+                 "gameid" (first (gethash socket hunchenissr:-clients-)))))
     (when (and script (string= script "/backgammon")
                gameid (not (member socket (gethash gameid games))))
       (setf (gethash gameid games)
             (append (gethash gameid games)
                     (list socket))))))
-(pushnew #'add-player on-connect-hook)
+(pushnew #'add-player -on-connect-hook-)
 
 ;; remove player
 (defun remove-player (socket)
   (let ((gameid (get-parameter
-                 "gameid" (first (gethash socket *clients*)))))
+                 "gameid" (first (gethash socket hunchenissr:-clients-)))))
     (setf (gethash gameid games)
           (remove socket (gethash gameid games)))))
-(pushnew #'remove-player on-disconnect-hook)
+(pushnew #'remove-player -on-disconnect-hook-)
 
 (deftag segment (&key game from end pip)
   "Return a list of points FROM to END where PIP is the selected pip."
@@ -145,7 +158,7 @@
       (dolist (player players)
         (when (and (not (equalp *socket* player))
                    action)
-          (rr player (format nil "?action=~a"
+          (hunchenissr:rr player (format nil "?action=~a"
                              (if (string= action 'roll)
                                  '(nil roll)
                                  '(nil))))))
@@ -272,4 +285,4 @@
    (sleep 86400))
  :name "cleanup backgammon games")
 
-(load (make-pathname :name "tutorial" :type "lisp"))
+(load "tutorial.lisp")
