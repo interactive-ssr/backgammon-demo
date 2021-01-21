@@ -176,7 +176,7 @@
                <script noupdate="t">
                  ,(format nil "setup(~a,~a)" *id* *ws-port*)
                </script>
-               <title>Backgammon -- ISSR</title>
+               <title>,(progn "Backgammon | ISSR")</title>
              </head>
              <body>
                <style>
