@@ -1,4 +1,3 @@
-(ql:quickload '(hunchenissr markup))
 (defpackage backgammon
   (:use #:cl #:markup)
   (:import-from #:hunchentoot
@@ -19,12 +18,6 @@
 (markup:enable-reader)
 
 (load "backgammon.lisp")
-
-(defparameter server
-  (start (make-instance 'easy-acceptor
-                        :port 8080
-                        :document-root "resources/")
-         :ws-port 4433))
 
 (defconstant die-faces
   #(#\die_face-1 #\die_face-2 #\die_face-3 #\die_face-4 #\die_face-5 #\die_face-6))
@@ -280,3 +273,9 @@
          (remhash gameid games))))
    (sleep 86400))
  :name "cleanup backgammon games")
+
+(define-easy-handler (backgammon-tutorial :uri "/backgammon-tutorial")
+    (theme)
+    <php:tutorial title="Backgammon Tutorial | ISSR"
+                  body-file="tutorial-body.html"
+                  theme=theme />)
