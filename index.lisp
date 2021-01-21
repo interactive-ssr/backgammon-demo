@@ -277,6 +277,6 @@
 (define-easy-handler (backgammon-tutorial :uri "/backgammon-tutorial")
     (theme)
   (write-html
-    <php:tutorial title="Backgammon Tutorial | ISSR"
-                  body-file="tutorial-body.html"
-                  theme=theme />))
+   <php:tutorial title="Backgammon Tutorial | ISSR"
+                 body-file=(php:with-cwd "tutorial-body.html")
+                 theme=theme />))
