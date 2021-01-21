@@ -1,0 +1,307 @@
+<body>
+  <h1>
+    <abbr title="Interactive Server Side Rendering">ISSR</abbr>
+    Tutorial: Backgammon
+  </h1>
+  <p>
+    The purpose of this web page is to teach you how to make an interactive website without writing any Javascript code in the style of
+    <a href="https://github.com/interactive-ssr/client">
+      <abbr title="Interactive Server Side Rendering">ISSR</abbr>
+    </a>.
+    You can see the <a href="/backgammon">final product</a> of this tutorial.
+  </p>
+  <p>
+    The full source code for this tutorial is available in the
+    <a href="https://github.com/interactive-ssr/backgammon-demo">git repository</a>.
+    This tutorial is not a Lisp, HTML, or CSS tutorial, so I will be providing the CSS and most of the Lisp. It is primarly to teach how to use the ISSR framework. That said, This tutorial is using the Hunchenissr implementation, so there will be a decent amount of Lisp and you should know the basics. The directory structure for this tutorial is like so. Everything in this tutorial will be in one file:
+    <code>index.lisp</code>.
+  </p>
+  <code-sample theme=theme >
+backgammon-tutorial
+├─ <a href="/backgammon.lisp" download="backgammon.lisp">backgammon.lisp</a>
+├─ index.lisp
+└─ resources
+   ├─ <a href="/backgammon.css" download="backgammon.css">backgammon.css</a>
+   ├─ <a href="/issr.js" download="issr.js">issr.js</a>
+   └─ <a href="/site.css" download="site.css">site.css</a></code-sample>
+  <h2>Requirements</h2>
+  <p>
+    You will need a
+    <a href="http://lisp-lang.org">Common Lisp</a>
+    implemention (I'm using <a href="http://sbcl.org">SBCL</a>),
+    <a href="http://quicklisp.org">Quicklisp</a>
+    , decent knowledge of HTML, and basic knowledge of Lisp. Quicklisp will get all the dependencies except
+    <a href="https://github.com/sionescu/libfixposix">libfixposix</a> and g++
+    which should be available from your Operating System's package manager;
+    make sure to get the development version that has the C header files.
+    You do
+    <em>not</em>
+    need to know CSS, or the rules of
+    <a href="http://wikipedia.org/wiki/Backgammon">Backgammon</a>.
+  </p>
+  <hr/>
+  <h2>Setup</h2>
+  <p>
+    First, we need to load the required packages and bundle them into into our own backgammon tutorial package. We will use quicklisp to load the
+    Hunchenissr package which is what this tutorial is for (this will also load Hunchentoot our HTTP server) and the
+    <code>markup</code>
+    package which lets us write HTML directly in Lisp.
+    Since Hunchenissr isn't on Quicklisp yet, just
+    <a href="https://github.com/interactive-ssr/hunchenissr/archive/master.zip">download</a>
+    the repository to
+    <code>~/quicklisp/local-projects/hunchenissr</code>.
+    We use <code>:import-from</code>to tell Lisp which functions and variables we want to import into our backgammon namespace.
+    You can just copy and paste this section since it is just setup code.
+  </p>
+  <code-sample theme=theme >
+<span class="rainbow-delimiters-depth-1">(</span>ql:quickload <span class="extra">'</span><span class="rainbow-delimiters-depth-2">(</span>hunchenissr markup<span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span>
+<span class="rainbow-delimiters-depth-1">(</span><span class="keyword">defpackage</span> <span class="type">backgammon</span>
+  <span class="rainbow-delimiters-depth-2">(</span><span class="builtin">:use</span> <span class="extra">#</span>:<span class="doc">cl</span> <span class="extra">#</span>:<span class="doc">markup</span><span class="rainbow-delimiters-depth-2">)</span>
+  <span class="rainbow-delimiters-depth-2">(</span><span class="builtin">:import-from</span> <span class="extra">#</span>:<span class="doc">hunchentoot</span>
+                easy-acceptor
+                set-cookie
+                cookie-value
+                cookie-in
+                cookie-out<span class="rainbow-delimiters-depth-2">)</span>
+  <span class="rainbow-delimiters-depth-2">(</span><span class="builtin">:import-from</span> <span class="extra">#</span>:<span class="doc">hunchenissr</span>
+                define-easy-handler
+                *id*
+                *socket*
+                *ws-port*
+                start
+                stop
+                redirect<span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span></code-sample>
+  <p>Next we need to enter the backgammon package namespace and enable the HTML/markup syntax.</p>
+  <code-sample theme=theme >
+<span class="rainbow-delimiters-depth-1">(</span><span class="keyword">in-package</span> <span class="extra">#</span>:<span class="doc">backgammon</span><span class="rainbow-delimiters-depth-1">)</span>
+<span class="rainbow-delimiters-depth-1">(</span>markup:enable-reader<span class="rainbow-delimiters-depth-1">)</span></code-sample>
+  <p>Since we are programming a backgammon game, we need to encode the rules of backgammon. I have already done this for you in
+    <a href="http://raw.githubusercontent.com/interactive-ssr/backgammon-demo/master/backgammon.lisp">
+      <code>backgammon.lisp</code>
+    </a>
+    . It provides a backgammon game object that is fully functional, so whenever a dice is rolled or a piece (pip) is moved, it returns a fresh backgammon game object with the changes made instead of modifying an existing one. Just make sure it is in the same directory as our
+    <code>index.lisp</code>
+    and load it in.
+  </p>
+  <p>
+    We will start out with just a single backgammon game and do multiplayer later in the tutorial. For now justs make a single
+    <code>game</code>
+    variable.
+  </p>
+  <code-sample theme=theme >
+<span class="rainbow-delimiters-depth-1">(</span>load <span class="string">"backgammon.lisp"</span><span class="rainbow-delimiters-depth-1">)</span>
+
+<span class="rainbow-delimiters-depth-1">(</span><span class="keyword">defparameter</span> <span class="variable-name">game</span> <span class="rainbow-delimiters-depth-2">(</span>make-instance <span class="extra">'</span>backgammon<span class="rainbow-delimiters-depth-2">)</span>
+  <span class="doc">"The backgammon game object."</span><span class="rainbow-delimiters-depth-1">)</span></code-sample>
+  <p>
+    The final step of setting up is to start the HTTP server. This is almost the same process as with normal Hunchentoot. The difference is the
+    <code>:ws-port</code>
+    argument which is used by ISSR to start the web socket server. If you want to stop your server, you can execute
+    <code>(stop server)</code>
+    in the REPL and
+    <code>(start server)</code>
+    to start it again.
+  </p>
+  <code-sample theme=theme >
+<span class="rainbow-delimiters-depth-1">(</span><span class="keyword">defparameter</span> <span class="variable-name">server</span>
+  <span class="rainbow-delimiters-depth-2">(</span>start <span class="rainbow-delimiters-depth-3">(</span>make-instance <span class="extra">'</span>easy-acceptor
+                        <span class="builtin">:port</span> 8080
+                        <span class="builtin">:document-root</span> <span class="string">"resources/"</span><span class="rainbow-delimiters-depth-3">)</span>
+         <span class="builtin">:ws-port</span> 4433<span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span></code-sample>
+  <hr/>
+  <h2>Backgammon Web Page</h2>
+  <p>First, we will define a way for people to access the backgammon game from a browser; we will do this using
+    <code>define-easy-handler</code>
+    . This URL will have a single parameter
+    (<code>action</code>)
+    which we will use for user input in ISSR. This is a lot like defining a function named
+    <code>backgammon</code>
+    with a single parameter and will return an HTML string.
+    This function is called when a person accesses the URL in the browser and the are displayed the HTML that is the result of this function.
+  </p>
+  <p>
+    The
+    <code>action</code>
+    parameter will be a stringified list where the first element of the list describes the action and the second element of the list is extra info about the action. For example, if the value of
+    <code>action</code> is
+    <code>"(pip 4)"</code>
+    , it means that the user interacted with the pip in the 4<sup>th</sup> position.
+    We will parse this string into two separate variables
+    (<code>action</code> and <code>info</code>) using <code>read-from-string</code>
+    . In case the user is messing with anything, we will use
+    <code>handler-case</code> to catch any errors.
+    Lastly we will have a <code>let</code> to define any variables we need during HTML generation.
+  </p>
+  <p>
+    The
+    <code>with-slots</code>
+    allows us to access out backgammon game object easier. Instead of
+    <code>(points game)</code>
+    we can just use
+    <code>points</code>
+    to access the main backgammon board.
+  </p>
+  <code-sample theme=theme >
+<span class="rainbow-delimiters-depth-1">(</span><span class="keyword">define-easy-handler</span> <span class="rainbow-delimiters-depth-2">(</span>backgammon <span class="builtin">:uri</span> <span class="string">"/backgammon"</span><span class="rainbow-delimiters-depth-2">)</span>
+    <span class="rainbow-delimiters-depth-2">(</span>action<span class="rainbow-delimiters-depth-2">)</span>
+  <span class="rainbow-delimiters-depth-2">(</span><span class="keyword">multiple-value-bind</span> <span class="rainbow-delimiters-depth-3">(</span>action info<span class="rainbow-delimiters-depth-3">)</span>
+      <span class="rainbow-delimiters-depth-3">(</span>values-list <span class="rainbow-delimiters-depth-4">(</span><span class="keyword">handler-case</span>
+                       <span class="rainbow-delimiters-depth-5">(</span>read-from-string action<span class="rainbow-delimiters-depth-5">)</span>
+                     <span class="rainbow-delimiters-depth-5">(</span>t <span class="rainbow-delimiters-depth-6">()</span> nil<span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span>
+    <span class="comment-delimiter">;; </span><span class="comment">more Lisp goes here
+</span>    <span class="rainbow-delimiters-depth-3">(</span><span class="keyword">with-slots</span> <span class="rainbow-delimiters-depth-4">(</span>points dice used-dice turn white-goal white-bar black-goal black-bar<span class="rainbow-delimiters-depth-4">)</span> game
+      <span class="rainbow-delimiters-depth-4">(</span><span class="keyword">let</span> <span class="rainbow-delimiters-depth-5">(</span><span class="comment-delimiter">;; </span><span class="comment">define variables here
+</span>            <span class="rainbow-delimiters-depth-5">)</span>
+        <span class="rainbow-delimiters-depth-5">(</span>write-html
+         &lt;<span class="function-name">html</span>&gt;
+           &lt;<span class="function-name">head</span>&gt;
+           &lt;/<span class="function-name">head</span>&gt;
+           &lt;<span class="function-name">body</span>&gt;
+             &lt;<span class="function-name">h1</span>&gt;Backgammon&lt;/<span class="function-name">h1</span>&gt;
+             <span class="comment">&lt;!-- More HTML goes here--&gt;</span>
+           &lt;/<span class="function-name">body</span>&gt;
+         &lt;/<span class="function-name">html</span>&gt;<span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span><span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span></code-sample>
+  <p>
+    Now if you evaluate all the code so far and visit
+    <a href="http://localhost:8080/backgammon">localhost:8080/backgammon</a>
+    , you should see the header <q>Backgammon</q>.
+  </p>
+  <p>
+    To enable ISSR on this web page, we need to load the ISSR client code:
+    <code>issr.js</code>
+    , and call the Javascript setup function with parameters
+    <code>*id*</code> and <code>*ws-port*</code>. The
+    <code>noupdate</code>
+    attribute was invinted by ISSR; it ensures that even if something is updated on the server, the client doens't get updated. In this case the server is going to update
+    <code>*id*</code>
+    , but we don't want the client trying to connect when it is already connected.
+
+    While we are in the <code>head</code> section, let's load some CSS too.
+  </p>
+  <code-sample theme=theme >
+&lt;<span class="function-name">head</span>&gt;
+  &lt;<span class="function-name">link</span> <span class="constant">href</span>=<span class="string">"backgammon.css"</span> <span class="constant">rel</span>=<span class="string">"stylesheet"</span>/&gt;
+  &lt;<span class="function-name">link</span> <span class="constant">href</span>=<span class="string">"site.css"</span> <span class="constant">rel</span>=<span class="string">"stylesheet"</span>/&gt;
+  &lt;<span class="function-name">script</span> <span class="constant">src</span>=<span class="string">"issr.js"</span>&gt;&lt;/<span class="function-name">script</span>&gt;
+  &lt;<span class="function-name">script</span> <span class="constant">noupdate</span>=<span class="string">"t"</span>&gt;
+    <span class="extra">,</span><span class="rainbow-delimiters-depth-1">(</span>format nil <span class="string">"setup(~a,~a)"</span> *id* *ws-port*<span class="rainbow-delimiters-depth-1">)</span>
+  &lt;/<span class="function-name">script</span>&gt;
+  &lt;<span class="function-name">title</span>&gt;Backgammon -- ISSR&lt;/<span class="function-name">title</span>&gt;
+&lt;/<span class="function-name">head</span>&gt;</code-sample>
+  <h3>Roll Dice</h3>
+  <p>
+    We need a button to roll the dice. The
+    <code>name</code> attribute will be
+    <code>"action"</code>so that the
+    <code>value</code> attribute of this button will be the value of the
+    <code>action</code> variable. The <code>value</code> attribute will be
+    <code>"(roll)"</code> because we only need to know that the user interactied with the roll dice button, no special information needed.
+    Finally, we want the button to be disabled if there are still moves to be made before the next roll. For this we will use the
+    <code>can-move-<strong>p</strong></code> <strong style="padding-left: .5ch;">p</strong>redicate from
+    <code>backgammon.lisp</code> to tell if the player has any moves left.
+  </p>
+  <code-sample theme=theme >
+&lt;<span class="function-name">button</span> <span class="constant">name</span>=<span class="string">"action"</span> <span class="constant">value</span>=<span class="string">"(roll)"</span>
+        <span class="constant">onclick</span>=<span class="string">"rr(this)"</span>
+        <span class="constant">disabled</span>=<span class="rainbow-delimiters-depth-1">(</span>can-move-p game<span class="rainbow-delimiters-depth-1">)</span>&gt;
+  Roll Dice
+&lt;/<span class="function-name">button</span>&gt;</code-sample>
+  <p>
+    The <code>rr</code> function in the
+    <code>onclick</code> attribute will call our
+    <code>define-easy-handler</code> backgammon function again and populate the
+    <code>action</code> parameter, so we need to do something with that value.
+    It will then syncronize the user's web page view to the result of our function output.
+    In the Lisp section, we will check if the
+    <code>action</code> variable has the value
+    <q>roll</q>, and if it does, roll the dice in the backgammon game object.
+    Remember, when we use the
+    <code>roll-dice</code> function on our backgammon game object, it will return a new backgamon game object with the rolled dice, so we need to set the
+    <code>game</code> to the result of
+    <code>roll-dice</code>.
+  </p>
+  <code-sample theme=theme >
+<span class="rainbow-delimiters-depth-1">(</span><span class="keyword">when</span> <span class="rainbow-delimiters-depth-2">(</span>string= action <span class="extra">'</span>roll<span class="rainbow-delimiters-depth-2">)</span>
+  <span class="rainbow-delimiters-depth-2">(</span>setq game <span class="rainbow-delimiters-depth-3">(</span>roll-dice game<span class="rainbow-delimiters-depth-3">)</span><span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span></code-sample>
+  <p>You should now see a roll dice button your web page, and when you click it, the button should become disabled.</p>
+  <hr/>
+  <h3>Backgammon Board</h3>
+  <p>
+    For the board,
+    <a href="http://raw.githubusercontent.com/interactive-ssr/backgammon-demo/master/resources/backgammon.css">
+      <code>backgammon.css</code>
+    </a>
+    provides styling for serveral custom SGML tags that we will make out board out of. Since these tags are not
+    <q>valid</q> HTML, we will use a colon before the tag name to tell the
+    <code>markup</code> package that we are sure we want to use them.
+    The backgammon.css for the full layout of the board.
+  </p>
+  <h4>Dice</h4>
+  <p>
+    We will start with the backgammon, dice, and die tags to display the dice that we just rolled.
+    The dice tag has a color attribute that should be the same color as whoever's turn it is (white or black).
+    Inside the dice tag, we want our die tags to reflect the dice in our backgamon game object.
+    In the backgammon game object the dice are stored in two lists:
+    <code>(dice game)</code>
+    and
+    <code>(used-dice game)</code>
+    which are both lists of number representing the die faces.
+    To streamline the HTML generation, we will combine them into a single list in our variable section.
+  </p>
+  <code-sample theme=theme >
+<span class="rainbow-delimiters-depth-1">(</span><span class="comment-delimiter">;; </span><span class="comment">define variables here
+</span> <span class="rainbow-delimiters-depth-2">(</span>dice <span class="rainbow-delimiters-depth-3">(</span>sort <span class="rainbow-delimiters-depth-4">(</span>append <span class="rainbow-delimiters-depth-5">(</span>mapcar <span class="rainbow-delimiters-depth-6">(</span><span class="keyword">lambda</span> <span class="rainbow-delimiters-depth-7">(</span>die<span class="rainbow-delimiters-depth-7">)</span> <span class="rainbow-delimiters-depth-7">(</span>list die nil<span class="rainbow-delimiters-depth-7">)</span><span class="rainbow-delimiters-depth-6">)</span>
+                             dice<span class="rainbow-delimiters-depth-5">)</span>
+                     <span class="rainbow-delimiters-depth-5">(</span>mapcar <span class="rainbow-delimiters-depth-6">(</span><span class="keyword">lambda</span> <span class="rainbow-delimiters-depth-7">(</span>die<span class="rainbow-delimiters-depth-7">)</span> <span class="rainbow-delimiters-depth-7">(</span>list die t<span class="rainbow-delimiters-depth-7">)</span><span class="rainbow-delimiters-depth-6">)</span>
+                             used-dice<span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span>
+             <span class="extra">#'</span>&lt; <span class="builtin">:key</span> <span class="extra">#'</span>first<span class="rainbow-delimiters-depth-3">)</span><span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span>
+  </code-sample>
+  <p>
+    The
+    <code>mapcar</code>s keep the used-or-not-used data of the dice
+    (<code>t</code> for used <code>nil</code> for not used).
+    The <code>append</code> combines the list.
+    and the
+    <code>sort</code>
+    makes sure the the dice stay in the same order.
+    If the roll was 1 and 3 and the player used the 3 dice the list would look like this:
+    <code>((1 nil) (3 t))</code>.
+  </p>
+  <p>
+    Now that we have the dice variable, we can can map through it to generate die tags.
+    If the player just rolled the dice we want the dice to spin, so we will add a CSS animation in the style attribute.
+    We want to dice to be disabled if they have been used or if the player is unable to move anymore.
+    The
+    <code>,(progn ",@")</code>
+    will dump the die tags into the dice tag.
+    For now the face of the dice will just be the Arabic number representation of the die (1 2 3 4 5 or 6).
+  </p>
+  <code-sample theme=theme >
+&lt;<span class="builtin">:backgammon</span>&gt;
+ &lt;<span class="builtin">:dice</span> <span class="constant">color</span>=<span class="rainbow-delimiters-depth-1">(</span>symbol-name turn<span class="rainbow-delimiters-depth-1">)</span>&gt;
+   <span class="extra">,(progn ",@")</span><span class="rainbow-delimiters-depth-1">(</span>mapcar <span class="rainbow-delimiters-depth-2">(</span><span class="keyword">lambda</span> <span class="rainbow-delimiters-depth-3">(</span>die<span class="rainbow-delimiters-depth-3">)</span>
+               &lt;<span class="builtin">:die</span> <span class="constant">style</span>=<span class="rainbow-delimiters-depth-3">(</span><span class="keyword">when</span> <span class="rainbow-delimiters-depth-4">(</span>string= action <span class="extra">'</span>roll<span class="rainbow-delimiters-depth-4">)</span>
+                             <span class="rainbow-delimiters-depth-4">(</span>format nil <span class="string">"animation: .1s roll linear ~a;"</span>
+                                     <span class="rainbow-delimiters-depth-5">(</span>+ <span class="rainbow-delimiters-depth-6">(</span>random 8<span class="rainbow-delimiters-depth-6">)</span> 2<span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span>
+                     <span class="constant">disabled</span>=<span class="rainbow-delimiters-depth-3">(</span>or <span class="rainbow-delimiters-depth-4">(</span>second die<span class="rainbow-delimiters-depth-4">)</span> <span class="rainbow-delimiters-depth-4">(</span>not <span class="rainbow-delimiters-depth-5">(</span>can-move-p game<span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span>&gt;
+                 <span class="extra">,</span><span class="rainbow-delimiters-depth-3">(</span>first die<span class="rainbow-delimiters-depth-3">)</span>
+               &lt;/<span class="builtin">:die</span>&gt;<span class="rainbow-delimiters-depth-2">)</span>
+             dice<span class="rainbow-delimiters-depth-1">)</span>
+ &lt;/<span class="builtin">:dice</span>&gt;
+  </code-sample>
+  <h4>Goals</h4>
+  <p>
+    The white goal goes just inside the backgammon-top tag, and the black goal goes just before the end of the backgammon-bottom tag.
+    The goal tag has a color attribute; since this is the white goal the color will always be
+    <q>white</q>.
+    Once the player clicks on a pip, we need to calculate if the player can move that pip onto the goal. backgammon.lisp provides this functionality through them
+    <code>get-point-move</code> function which takes a backgammon game object, the number of the point to move to (the constant
+    <code>+white-goal+</code>), and the selected pip (
+    <code>info</code> if the player has selected a pip).
+    It returns the dice required to make the move, or an empty list if the move cannot be made.
+    We want the value to include the action
+    <q>move</q>, the currently selected pip (
+    <code>info</code>, and the dice needed to move there (results of
+    <code>get-point-move</code> function).
+  </p>
+</body>
