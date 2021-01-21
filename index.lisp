@@ -6,9 +6,7 @@
                 set-cookie
                 cookie-value
                 cookie-in
-                cookie-out
-                get-parameter
-                script-name)
+                cookie-out)
   (:import-from #:hunchenissr
                 define-easy-handler
                 *id*
@@ -16,9 +14,7 @@
                 *ws-port*
                 start
                 stop
-                redirect
-                -on-connect-hook-
-                -on-disconnect-hook-))
+                redirect))
 (in-package #:backgammon)
 (markup:enable-reader)
 
@@ -51,23 +47,23 @@
 
 ;; add player to game
 (defun add-player (socket)
-  (let ((script (script-name (first (gethash socket hunchenissr:-clients-))))
-        (gameid (get-parameter
+  (let ((script (hunchentoot:script-name (first (gethash socket hunchenissr:-clients-))))
+        (gameid (hunchentoot:get-parameter
                  "gameid" (first (gethash socket hunchenissr:-clients-)))))
     (when (and script (string= script "/backgammon")
                gameid (not (member socket (gethash gameid games))))
       (setf (gethash gameid games)
             (append (gethash gameid games)
                     (list socket))))))
-(pushnew #'add-player -on-connect-hook-)
+(pushnew #'add-player hunchenissr:-on-connect-hook-)
 
 ;; remove player
 (defun remove-player (socket)
-  (let ((gameid (get-parameter
+  (let ((gameid (hunchentoot:get-parameter
                  "gameid" (first (gethash socket hunchenissr:-clients-)))))
     (setf (gethash gameid games)
           (remove socket (gethash gameid games)))))
-(pushnew #'remove-player -on-disconnect-hook-)
+(pushnew #'remove-player hunchenissr:-on-disconnect-hook-)
 
 (deftag segment (&key game from end pip)
   "Return a list of points FROM to END where PIP is the selected pip."
