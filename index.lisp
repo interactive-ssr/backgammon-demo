@@ -284,5 +284,3 @@
          (remhash gameid games))))
    (sleep 86400))
  :name "cleanup backgammon games")
-
-(load "tutorial.lisp")
