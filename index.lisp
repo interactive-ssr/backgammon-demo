@@ -156,10 +156,12 @@
          (players (cdr (gethash gameid games)))
          (piped  (parse-integer (or pip "")
                                 :junk-allowed t))
-         (dice (sort (append (mapcar (lambda (die) (list die nil))
-                                     (dice game))
-                             (mapcar (lambda (die) (list die t))
-                                     (used-dice game)))
+         (dice (sort (append (map 'list
+                                  (lambda (die) (list die nil))
+                                  (dice game))
+                             (map 'list
+                                  (lambda (die) (list die t))
+                                  (used-dice game)))
                      #'< :key #'first))
          (winner (finished-p game)))
     (with-slots (points turn white-goal white-bar black-goal black-bar) game
@@ -199,13 +201,14 @@
            </button>
            <:backgammon id="board">
              <:dice color=turn >
-               ,@(mapcar (lambda (die)
-                           <:die style=(unless (str:emptyp roll)
-                                          (format nil "animation: .1s roll linear ~a;"
-                                                  (+ (random 8) 2)))
-                                  disabled=(when (or (second die) (not (can-move-p game))) t)>
-                             ,(die-face (first die))
-                           </:die>)
+               ,@(map 'list
+                      (lambda (die)
+                        <:die style=(unless (str:emptyp roll)
+                                      (format nil "animation: .1s roll linear ~a;"
+                                              (+ (random 8) 2)))
+                              disabled=(when (or (second die) (not (can-move-p game))) t)>
+                          ,(die-face (first die))
+                        </:die>)
                          dice)
              </:dice>
              <:backgammon-top>
