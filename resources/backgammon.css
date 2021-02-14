@@ -16,10 +16,10 @@
 </style>
 <backgammon id="custom">
   <dice color="black">
-    <span>&#9856;</span>
-    <span>&#9856;</span>
-    <span>&#9856;</span>
-    <span>&#9856;</span>
+    <die>&#9856;</die>
+    <die>&#9856;</die>
+    <die>&#9856;</die>
+    <die>&#9856;</die>
   </dice>
   <backgammon-top>
     <goal></goal>
