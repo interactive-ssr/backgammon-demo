@@ -30,7 +30,7 @@
   #(#\die_face-1 #\die_face-2 #\die_face-3 #\die_face-4 #\die_face-5 #\die_face-6))
 (defun die-face (n) (elt die-faces (- n 1)))
 
-(defparameter games (make-hash-table :test #'equalp)
+(defparameter *games* (make-hash-table :test #'equalp)
   "Key: gameid, Value: (list backgammon players...)")
 
 (defun random-alphanum (length &key not-in)
@@ -51,9 +51,9 @@
         (gameid (hunchentoot:get-parameter
                  "gameid" (first (gethash socket hunchenissr:-clients-)))))
     (when (and script (string= script "/backgammon")
-               gameid (not (member socket (gethash gameid games))))
-      (setf (gethash gameid games)
-            (append (gethash gameid games)
+               gameid (not (member socket (gethash gameid *games*))))
+      (setf (gethash gameid *games*)
+            (append (gethash gameid *games*)
                     (list socket))))))
 (pushnew #'add-player hunchenissr:-on-connect-hook-)
 
@@ -61,8 +61,8 @@
 (defun remove-player (socket)
   (let ((gameid (hunchentoot:get-parameter
                  "gameid" (first (gethash socket hunchenissr:-clients-)))))
-    (setf (gethash gameid games)
-          (remove socket (gethash gameid games)))))
+    (setf (gethash gameid *games*)
+          (remove socket (gethash gameid *games*)))))
 (pushnew #'remove-player hunchenissr:-on-disconnect-hook-)
 
 (deftag segment (&key pip-action point-action game from to pip)
@@ -122,18 +122,18 @@
   ;; ensure gameid
   (unless gameid
     (redirect (format nil "/backgammon?gameid=~a"
-                      (random-alphanum 8 :not-in (alexandria:hash-table-keys games)))))
+                      (random-alphanum 8 :not-in (alexandria:hash-table-keys *games*)))))
   ;; ensure game exists for gameid
-  (unless (gethash gameid games)
-    (setf (gethash gameid games)
+  (unless (gethash gameid *games*)
+    (setf (gethash gameid *games*)
           (list (make-instance 'backgammon)))
     (when *socket*
       (add-player *socket*)))
   ;; roll dice
   (when (string= t roll)
-    (setf (gethash gameid games)
-          (cons (roll-dice (car (gethash gameid games)))
-                (cdr (gethash gameid games)))))
+    (setf (gethash gameid *games*)
+          (cons (roll-dice (car (gethash gameid *games*)))
+                (cdr (gethash gameid *games*)))))
   ;; move pip
   (unless (str:emptyp move)
     (multiple-value-bind (pip dice)
@@ -146,14 +146,14 @@
                                 (multiple-value-bind (game spot) (values-list game--spot)
                                   (list (move game spot die)
                                         (valid-move-p game spot die))))
-                              dice :initial-value (list (first (gethash gameid games)) pip))))
+                              dice :initial-value (list (first (gethash gameid *games*)) pip))))
         (when new-game
-          (setf (gethash gameid games)
+          (setf (gethash gameid *games*)
                 (cons (first new-game)
-                      (cdr (gethash gameid games))))))))
+                      (cdr (gethash gameid *games*))))))))
   (let* (;; local variables go here
-         (game (car (gethash gameid games)))
-         (players (cdr (gethash gameid games)))
+         (game (car (gethash gameid *games*)))
+         (players (cdr (gethash gameid *games*)))
          (piped  (parse-integer (or pip "")
                                 :junk-allowed t))
          (dice (sort (append (map 'list
@@ -291,12 +291,12 @@
 ;; delete old backgammon games
 (bordeaux-threads:make-thread
  (lambda ()
-   (dolist (gameid (alexandria:hash-table-keys games))
-     (let ((game (first (gethash gameid games))))
+   (dolist (gameid (alexandria:hash-table-keys *games*))
+     (let ((game (first (gethash gameid *games*))))
        (when (or (null game)
                  (< 86400
                     (- (get-universal-time)
                        (time-created game))))
-         (remhash gameid games))))
+         (remhash gameid *games*))))
    (sleep 86400))
  :name "cleanup backgammon games")
