@@ -19,12 +19,6 @@
 
 (load "backgammon.lisp")
 
-(defparameter server
-  (start (make-instance 'easy-acceptor
-                        :port 8080
-                        :document-root "resources/")
-         :ws-port 4433))
-
 (defconstant +die-faces+ "⚀⚁⚂⚃⚄⚅")
 (defun die-face (n) (elt +die-faces+ (- n 1)))
 
