@@ -298,5 +298,8 @@
     (theme)
   (write-html
    <php:tutorial title="Backgammon Tutorial | ISSR"
-                 body-file=(php:with-cwd "tutorial-body.html")
+                 body-tags=(progn
+                             #.(read-from-string
+                                (uiop:read-file-string
+                                 "tutorial-body.html")))
                  theme=theme />))
