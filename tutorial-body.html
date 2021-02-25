@@ -92,7 +92,7 @@ backgammon-tutorial
   game<span class="rainbow-delimiters-depth-1">)</span>
 
 <span class="rainbow-delimiters-depth-1">(</span><span class="keyword">defun</span> <span class="function-name">set-game</span> <span class="rainbow-delimiters-depth-2">(</span>new-game<span class="rainbow-delimiters-depth-2">)</span>
-  <span class="rainbow-delimiters-depth-2">(</span>setf game new-game<span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span></pre>
+  <span class="rainbow-delimiters-depth-2">(</span>set-game new-game<span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span></pre>
   <p>
     The final step of setting up is to start the HTTP server. This is almost the same process as with normal Hunchentoot. The difference is the
     <code>:ws-port</code>
@@ -203,7 +203,7 @@ backgammon-tutorial
 </span>     <mark>roll</mark><span class="rainbow-delimiters-depth-2">)</span>
   <span class="comment-delimiter">;; </span><span class="comment">roll dice
 </span>  <span class="rainbow-delimiters-depth-2">(</span><span class="keyword">when</span> <span class="rainbow-delimiters-depth-3">(</span>string= t roll<span class="rainbow-delimiters-depth-3">)</span>
-    <span class="rainbow-delimiters-depth-3">(</span>setf game <span class="rainbow-delimiters-depth-4">(</span>roll-dice game<span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span><span class="rainbow-delimiters-depth-2">)</span>
+    <span class="rainbow-delimiters-depth-3">(</span>set-game <span class="rainbow-delimiters-depth-4">(</span>roll-dice game<span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span><span class="rainbow-delimiters-depth-2">)</span>
   ...</pre>
   <h3>Backgammon Board</h3>
   <p>
@@ -574,7 +574,7 @@ backgammon-tutorial
                          <span class="rainbow-delimiters-depth-2">(</span>valid-move-p game spot die<span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span><span class="rainbow-delimiters-depth-9">)</span><span class="rainbow-delimiters-depth-8">)</span>
                dice <span class="builtin">:initial-value</span> <span class="rainbow-delimiters-depth-8">(</span>list game pip<span class="rainbow-delimiters-depth-8">)</span><span class="rainbow-delimiters-depth-7">)</span><span class="rainbow-delimiters-depth-6">)</span><span class="rainbow-delimiters-depth-5">)</span>
         <span class="rainbow-delimiters-depth-5">(</span><span class="keyword">when</span> new-game
-          <span class="rainbow-delimiters-depth-6">(</span>setf game new-game<span class="rainbow-delimiters-depth-6">)</span><span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span><span class="rainbow-delimiters-depth-2">)</span>
+          <span class="rainbow-delimiters-depth-6">(</span>set-game new-game<span class="rainbow-delimiters-depth-6">)</span><span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span><span class="rainbow-delimiters-depth-2">)</span>
   ...</pre>
 <p>
   You should now have a fully functioning backgammon game. In the next section, we will make our server handle multiple backgammon games that that can be joined with a code.
