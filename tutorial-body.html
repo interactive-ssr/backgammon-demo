@@ -608,7 +608,7 @@ backgammon-tutorial
   <span class="doc">"Key: gameid, Value: (list backgammon players...)"</span><span class="rainbow-delimiters-depth-1">)</span>
 
 <span class="rainbow-delimiters-depth-1">(</span><span class="keyword">defun</span> <span class="function-name">get-game</span> <span class="rainbow-delimiters-depth-2">(</span>gameid<span class="rainbow-delimiters-depth-2">)</span>
-  <span class="rainbow-delimiters-depth-2">(</span>gethash gameid *games*<span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span>
+  <span class="rainbow-delimiters-depth-2">(</span>first <span class="rainbow-delimiters-depth-3">(</span>gethash gameid *games*<span class="rainbow-delimiters-depth-3">)</span><span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span>
 
 <span class="rainbow-delimiters-depth-1">(</span><span class="keyword">defun</span> <span class="function-name">set-game</span> <span class="rainbow-delimiters-depth-2">(</span>gameid new-game<span class="rainbow-delimiters-depth-2">)</span>
   <span class="rainbow-delimiters-depth-2">(</span><span class="keyword">if</span> <span class="rainbow-delimiters-depth-3">(</span>gethash gameid *games*<span class="rainbow-delimiters-depth-3">)</span>
