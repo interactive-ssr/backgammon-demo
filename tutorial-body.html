@@ -38,8 +38,9 @@ backgammon-tutorial
   </p>
   <p>
     First, we need to load the required packages and bundle them into into our own backgammon tutorial package. We will use quicklisp to load the
-    Hunchenissr package which is what this tutorial is for (this will also load Hunchentoot our HTTP server) and the
-    <code>markup</code>
+    Hunchenissr package which is what this tutorial is for (this will also load
+    <a href="https://edicl.github.io/hunchentoot/">Hunchentoot</a> our HTTP server) and the
+    <a href="https://github.com/moderninterpreters/markup#markup">markup</a>
     package which lets us write HTML directly in Lisp.
     We use
     <code>:import-from</code>
@@ -79,13 +80,19 @@ backgammon-tutorial
   <p>
     We will start out with just a single backgammon game and do multiplayer later in the tutorial. For now justs make a single
     <code>game</code>
-    variable.
+    variable. Add some basic set and get functions to increase the modularity of the game.
   </p>
   <pre class="code-sample">
 <span class="rainbow-delimiters-depth-1">(</span>load <span class="string">"backgammon.lisp"</span><span class="rainbow-delimiters-depth-1">)</span>
 
 <span class="rainbow-delimiters-depth-1">(</span><span class="keyword">defparameter</span> <span class="variable-name">game</span> <span class="rainbow-delimiters-depth-2">(</span>make-instance <span class="extra">'</span>backgammon<span class="rainbow-delimiters-depth-2">)</span>
-  <span class="doc">"The backgammon game object."</span><span class="rainbow-delimiters-depth-1">)</span></pre>
+  <span class="doc">"The backgammon game object."</span><span class="rainbow-delimiters-depth-1">)</span>
+
+<span class="rainbow-delimiters-depth-1">(</span><span class="keyword">defun</span> <span class="function-name">get-game</span> <span class="rainbow-delimiters-depth-2">()</span>
+  game<span class="rainbow-delimiters-depth-1">)</span>
+
+<span class="rainbow-delimiters-depth-1">(</span><span class="keyword">defun</span> <span class="function-name">set-game</span> <span class="rainbow-delimiters-depth-2">(</span>new-game<span class="rainbow-delimiters-depth-2">)</span>
+  <span class="rainbow-delimiters-depth-2">(</span>setf game new-game<span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span></pre>
   <p>
     The final step of setting up is to start the HTTP server. This is almost the same process as with normal Hunchentoot. The difference is the
     <code>:ws-port</code>
@@ -111,7 +118,7 @@ backgammon-tutorial
     Later on we will add some HTTP GET parameters to this function and we may want to define some local variables.
     The
     <code>with-slots</code>
-    allows us to access out backgammon game object easier. Instead of
+    allows us to access our backgammon game object easier. Instead of
     <code>(points game)</code>
     we can just use
     <code>points</code>
@@ -154,7 +161,7 @@ backgammon-tutorial
   </p>
   <h3>Roll Dice</h3>
   <p>
-    First we add a button to roll the dice. Put it right beneth the h1 tag.
+    First we add a button to roll the dice. Put it right under the h1 tag.
     The
     <code>onclick</code>
     attribute will triger a server call to re-render part of the page.
@@ -167,6 +174,8 @@ backgammon-tutorial
     The button should be disabled while the player still has moves left, so we will use the
     <code>can-move-<strong>p</strong></code>
     <strong>p</strong>redicate that comes with backgammon.lisp to test if we have any moves left.
+  </p>
+  <p class="important">
     The only difference between clicking this button and appending
     <code>?roll=T</code>
     to the url is that clicking the button (and thus calling the 
@@ -184,7 +193,7 @@ backgammon-tutorial
     Now we have to make a GET parameter and to handle the
     <code>?roll=T</code>
     from the client.
-    then once we have that information, we have to actuall roll the dice on our backgammon game object using the included
+    then once we have that information, we have to actually roll the dice on our backgammon game object using the included
     <code>roll-dice</code>
     function.
   </p>
@@ -200,8 +209,13 @@ backgammon-tutorial
   <p>
     For now we will just return a static representation of the current board of our backgammon game object.
     We will make it interactive later.
-    The structure of the board is an Array with each element being a list of two elements: the color of player owning the point and the number of pips on that point.
-    If there are no, pips then the element of that array is nil.
+    The structure of the board is an Array with each element being a point.
+    For each give point we can call the provided 
+    <code>point-color</code>
+    function to get it's color, and the
+    <code>point-pip-count</code>
+    function to get the number of pips on that point.
+    If there are no pips then the point is nil.
     The goals and bars are stored in separate variables in the backgammon game object.
     The dice are stored in two lists: one for used dice, and one for unused dice.
     Take a look at
@@ -215,8 +229,8 @@ backgammon-tutorial
     as described in
     <a href="https://github.com/interactive-ssr/backgammon-demo/blob/master/resources/backgammon.css#L17">
       backgammon.css
-    </a>.
-    Since the tags used (backgammon, backgammon-top, backgammon-bottom, dice, die, point, pip, goal, bar) are not offical HTML tags, we will be preceding them with colons, to tell our markup library that we know what we are doing.
+    </a> (there is an example too).
+    The tags used by backgammon.css (backgammon, backgammon-top, backgammon-bottom, dice, die, point, pip, goal, bar) are not official HTML tags, so we will be preceding them with colons, to tell our markup library that we know what we are doing.
     Like so
     <code>&lt;:backgammon&gt;...&lt;/:backgammon&gt;</code>.
   </p>
@@ -225,33 +239,21 @@ backgammon-tutorial
     We will start with the backgammon, dice, and die tags to display the dice that we just rolled.
     The dice tag has a color attribute that should be the same color as whoever's turn it is (white or black).
     Inside the dice tag, we want our die tags to reflect the dice in our backgamon game object.
-    In the backgammon game object the dice are stored in two lists:
-    <code>(dice game)</code>
-    and
-    <code>(used-dice game)</code>
-    which are both lists of number representing the die faces.
-    To streamline the HTML generation, we will combine them into a single list in our variable section.
+    To get the dice from the backgammon object,
+    we simply call the provided
+    <code>all-dice</code>
+    function on it.
   </p>
   <p>
-    The
-    <code>map</code>s keep the used-or-not-used data of the dice
-    (<code>t</code> for used <code>nil</code> for not used).
-    The <code>append</code> combines the list.
-    and the
-    <code>sort</code>
-    makes sure the the dice stay in the same order.
-    If the roll was 1 and 3 and the player used the 3 dice, the list would look like this:
-    <code>((1 nil) (3 t))</code>.
+    For each die in the returned list of dice, we can call the provided
+    <code>die-value</code>
+    function on it to get the integer value of the dice, and function
+    <code>die-used-p</code> 
+    to get if it has been used already.
   </p>
   <pre class="code-sample">
 <span class="rainbow-delimiters-depth-1">(</span><span class="keyword">let*</span> <span class="rainbow-delimiters-depth-2">(</span><span class="comment-delimiter">;; </span><span class="comment">local variables go here
-</span>       <span class="rainbow-delimiters-depth-3">(</span>dice <span class="rainbow-delimiters-depth-4">(</span>sort <span class="rainbow-delimiters-depth-5">(</span>append <span class="rainbow-delimiters-depth-6">(</span>map <span class="extra">'</span>list
-                                <span class="rainbow-delimiters-depth-7">(</span><span class="keyword">lambda</span> <span class="rainbow-delimiters-depth-8">(</span>die<span class="rainbow-delimiters-depth-8">)</span> <span class="rainbow-delimiters-depth-8">(</span>list die nil<span class="rainbow-delimiters-depth-8">)</span><span class="rainbow-delimiters-depth-7">)</span>
-                                <span class="rainbow-delimiters-depth-7">(</span>dice game<span class="rainbow-delimiters-depth-7">)</span><span class="rainbow-delimiters-depth-6">)</span>
-                           <span class="rainbow-delimiters-depth-6">(</span>map <span class="extra">'</span>list
-                                <span class="rainbow-delimiters-depth-7">(</span><span class="keyword">lambda</span> <span class="rainbow-delimiters-depth-8">(</span>die<span class="rainbow-delimiters-depth-8">)</span> <span class="rainbow-delimiters-depth-8">(</span>list die t<span class="rainbow-delimiters-depth-8">)</span><span class="rainbow-delimiters-depth-7">)</span>
-                                <span class="rainbow-delimiters-depth-7">(</span>used-dice game<span class="rainbow-delimiters-depth-7">)</span><span class="rainbow-delimiters-depth-6">)</span><span class="rainbow-delimiters-depth-5">)</span>
-                   <span class="extra">#'</span>&lt; <span class="builtin">:key</span> <span class="extra">#'</span>first<span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span><span class="rainbow-delimiters-depth-2">)</span>
+</span>       <span class="rainbow-delimiters-depth-3">(</span>dice <span class="rainbow-delimiters-depth-4">(</span>all-dice game<span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span><span class="rainbow-delimiters-depth-2">)</span>
   ...</pre>    
   <p>
     Now that we have the dice variable, we can can map through it to generate die tags.
@@ -261,6 +263,7 @@ backgammon-tutorial
     <code>,(progn ",@")</code>
     will dump the die tags into the dice tag.
     For now the face of the dice will just be the Arabic number representation of the die (1 2 3 4 5 or 6).
+    The id attribute on the backgammon tag is just for us to use in some CSS later.
   </p>
   <pre class="code-sample">
 &lt;<span class="builtin">:backgammon</span> <span class="constant">id</span>=<span class="string">"board"</span>&gt;
@@ -270,15 +273,20 @@ backgammon-tutorial
              &lt;<span class="builtin">:die</span> <span class="constant">style</span>=<span class="rainbow-delimiters-depth-3">(</span><span class="keyword">unless</span> <span class="rainbow-delimiters-depth-4">(</span>str:emptyp roll<span class="rainbow-delimiters-depth-4">)</span>
                            <span class="rainbow-delimiters-depth-4">(</span>format nil <span class="string">"animation: .1s roll linear ~a;"</span>
                                    <span class="rainbow-delimiters-depth-5">(</span>+ <span class="rainbow-delimiters-depth-6">(</span>random 8<span class="rainbow-delimiters-depth-6">)</span> 2<span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span>
-                   <span class="constant">disabled</span>=<span class="rainbow-delimiters-depth-3">(</span><span class="keyword">when</span> <span class="rainbow-delimiters-depth-4">(</span>or <span class="rainbow-delimiters-depth-5">(</span>second die<span class="rainbow-delimiters-depth-5">)</span>
+                   <span class="constant">disabled</span>=<span class="rainbow-delimiters-depth-3">(</span><span class="keyword">when</span> <span class="rainbow-delimiters-depth-4">(</span>or <span class="rainbow-delimiters-depth-5">(</span>die-used-p die<span class="rainbow-delimiters-depth-5">)</span>
                                       <span class="rainbow-delimiters-depth-5">(</span>not <span class="rainbow-delimiters-depth-6">(</span>can-move-p game<span class="rainbow-delimiters-depth-6">)</span><span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span>
                               t<span class="rainbow-delimiters-depth-3">)</span>
                    &gt;
-               <span class="extra">,</span><span class="rainbow-delimiters-depth-3">(</span>first die<span class="rainbow-delimiters-depth-3">)</span>
+               <span class="extra">,</span><span class="rainbow-delimiters-depth-3">(</span>die-value die<span class="rainbow-delimiters-depth-3">)</span>
              &lt;/<span class="builtin">:die</span>&gt;<span class="rainbow-delimiters-depth-2">)</span>
            dice<span class="rainbow-delimiters-depth-1">)</span>
   &lt;/<span class="builtin">:dice</span>&gt;</pre>
   <h4>Goals</h4>
+  <p>
+    The goals are the place where the players are trying to move their pips to end the game.
+    Pips go into them, stack up and can never be moved out.
+    Once all of one players pips are in the goal, the game is finished.
+  </p>
   <p>
     The white goal goes just inside the backgammon-top tag, and the black goal goes just before the end of the backgammon-bottom tag.
     The goal tag has a color attribute; since this is the white goal the color will always be
@@ -335,26 +343,23 @@ backgammon-tutorial
 &lt;/<span class="builtin">:backgammon-bottom</span>&gt;</pre>
 <h4>Points</h4>
 <p>
-  The 24 points fill rest of the space in the backgammon-top and backgammon-bottom tags. Remember that for any given point,
-  <code>(first point)</code>
-  is the color of the pips on that point, and 
-  <code>(second point)</code>
-  is the number of pips on that point.
-  Since it is not uncommon to have more than 5 pips on a single point, we will display the total number (or nothing if less than 5) of pips on the final pip in the point.
+  The 24 points fill rest of the space in the backgammon-top and backgammon-bottom tags.
+  They are the triangles that the pips sit on.
+  Since it is not uncommon to have more than 5 pips on a single point, we will display the total number (or nothing if less than 6) of pips on the final pip in the point.
 </p>
 <pre class="code-sample">
 <span class="extra">,(progn ",@")</span><span class="rainbow-delimiters-depth-1">(</span>map <span class="extra">'</span>list
        <span class="rainbow-delimiters-depth-2">(</span><span class="keyword">lambda</span> <span class="rainbow-delimiters-depth-3">(</span>point<span class="rainbow-delimiters-depth-3">)</span>
          <span class="rainbow-delimiters-depth-3">(</span><span class="keyword">let</span> <span class="rainbow-delimiters-depth-4">(</span><span class="comment-delimiter">;; </span><span class="comment">local variables for go here
 </span>               <span class="rainbow-delimiters-depth-4">)</span>
-           &lt;<span class="builtin">:point</span> <span class="constant">color</span>=<span class="rainbow-delimiters-depth-4">(</span>first point<span class="rainbow-delimiters-depth-4">)</span>&gt;
+           &lt;<span class="builtin">:point</span> <span class="constant">color</span>=<span class="rainbow-delimiters-depth-4">(</span>point-color point<span class="rainbow-delimiters-depth-4">)</span>&gt;
              <span class="extra">,(progn ",@")</span><span class="rainbow-delimiters-depth-4">(</span><span class="keyword">when</span> point
-                 <span class="rainbow-delimiters-depth-5">(</span>append <span class="rainbow-delimiters-depth-6">(</span><span class="keyword">loop</span> repeat <span class="rainbow-delimiters-depth-7">(</span>- <span class="rainbow-delimiters-depth-8">(</span>min 5 <span class="rainbow-delimiters-depth-9">(</span>second point<span class="rainbow-delimiters-depth-9">)</span><span class="rainbow-delimiters-depth-8">)</span> 1<span class="rainbow-delimiters-depth-7">)</span> collect
+                 <span class="rainbow-delimiters-depth-5">(</span>append <span class="rainbow-delimiters-depth-6">(</span><span class="keyword">loop</span> repeat <span class="rainbow-delimiters-depth-7">(</span>- <span class="rainbow-delimiters-depth-8">(</span>min 5 <span class="rainbow-delimiters-depth-9">(</span>point-pip-count point<span class="rainbow-delimiters-depth-9">)</span><span class="rainbow-delimiters-depth-8">)</span> 1<span class="rainbow-delimiters-depth-7">)</span> collect
                                &lt;<span class="builtin">:pip</span>&gt;&lt;/<span class="builtin">:pip</span>&gt;<span class="rainbow-delimiters-depth-6">)</span>
                          <span class="rainbow-delimiters-depth-6">(</span>list
                           &lt;<span class="builtin">:pip</span>&gt;
-                            <span class="extra">,</span><span class="rainbow-delimiters-depth-7">(</span><span class="keyword">when</span> <span class="rainbow-delimiters-depth-8">(</span>&lt; 5 <span class="rainbow-delimiters-depth-9">(</span>second point<span class="rainbow-delimiters-depth-9">)</span><span class="rainbow-delimiters-depth-8">)</span>
-                               <span class="rainbow-delimiters-depth-8">(</span>second point<span class="rainbow-delimiters-depth-8">)</span><span class="rainbow-delimiters-depth-7">)</span>
+                            <span class="extra">,</span><span class="rainbow-delimiters-depth-7">(</span><span class="keyword">when</span> <span class="rainbow-delimiters-depth-8">(</span>&lt; 5 <span class="rainbow-delimiters-depth-9">(</span>point-pip-count point<span class="rainbow-delimiters-depth-9">)</span><span class="rainbow-delimiters-depth-8">)</span>
+                               <span class="rainbow-delimiters-depth-8">(</span>point-pip-count point<span class="rainbow-delimiters-depth-8">)</span><span class="rainbow-delimiters-depth-7">)</span>
                           &lt;/<span class="builtin">:pip</span>&gt;<span class="rainbow-delimiters-depth-6">)</span><span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span>
            &lt;/<span class="builtin">:point</span>&gt;<span class="rainbow-delimiters-depth-3">)</span><span class="rainbow-delimiters-depth-2">)</span>
        <span class="rainbow-delimiters-depth-2">(</span>subseq <span class="rainbow-delimiters-depth-3">(</span>points game<span class="rainbow-delimiters-depth-3">)</span> 0 6<span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span></pre>
@@ -399,13 +404,13 @@ backgammon-tutorial
   <code>value</code>
   attributes to tags, adding GET parameters to match them, and comparing the values of the GET arguments to the backgammon game object (using the provided methods) to decide what the value of the 
   <code>value</code>
-  attributes should be. Once you get the hang of it, I encourage you to work ahead of the tutorial to put make a working backgammon game (checking your work of course). Don't forget to add the calls to the rr function too. This is where the fun begins!
+  attributes should be. Once you get the hang of it, I encourage you to work ahead of the tutorial to make a working backgammon game (checking your work of course). Don't forget to add the calls to the rr function too. This is where the fun begins!
 </p>
 <h4>Pips</h4>
 <p>
   Every final pip on a point or bar (not goal) needs to have
   <code>action="pip"</code>
-  and it's value should be the index of the point the pip is on. Bars don't have indexes since they aren't part of the array; there are constants defined in backgammon.lisp that represent the indexes of bars and goals:
+  and its value should be the index of the point the pip is on. Bars don't have indexes since they aren't part of the array; there are constants defined in backgammon.lisp that represent the indexes of bars and goals:
   <code>+white-bar+</code>,
   <code>+black-bar+</code>,
   <code>+white-goal+</code>,
@@ -440,12 +445,12 @@ backgammon-tutorial
     <span class="extra">,(progn ",@")</span><span class="rainbow-delimiters-depth-2">(</span>map <span class="extra">'</span>list
            <span class="rainbow-delimiters-depth-3">(</span><span class="keyword">lambda</span> <span class="rainbow-delimiters-depth-4">(</span>point <mark>index</mark><span class="rainbow-delimiters-depth-4">)</span>
              <span class="rainbow-delimiters-depth-4">(</span><span class="keyword">let</span> <span class="rainbow-delimiters-depth-5">(</span><span class="rainbow-delimiters-depth-6">(</span>turn <span class="rainbow-delimiters-depth-7">(</span>turn game<span class="rainbow-delimiters-depth-7">)</span><span class="rainbow-delimiters-depth-6">)</span><span class="rainbow-delimiters-depth-5">)</span>
-               &lt;<span class="builtin">:point</span> <span class="constant">color</span>=<span class="rainbow-delimiters-depth-5">(</span>first point<span class="rainbow-delimiters-depth-5">)</span>&gt;
+               &lt;<span class="builtin">:point</span> <span class="constant">color</span>=<span class="rainbow-delimiters-depth-5">(</span>point-color point<span class="rainbow-delimiters-depth-5">)</span>&gt;
                  <span class="extra">,(progn ",@")</span><span class="rainbow-delimiters-depth-5">(</span><span class="keyword">when</span> point
                      <span class="rainbow-delimiters-depth-6">(</span>append <span class="comment-delimiter">;; </span><span class="comment">whatever was here before
 </span>                      <span class="rainbow-delimiters-depth-7">(</span>list
                        &lt;<span class="builtin"><mark>:pip</mark></span> <span class="constant">action</span>=pip-action
-                             <span class="constant">onclick</span>=<span class="rainbow-delimiters-depth-8">(</span><span class="keyword">when</span> <span class="rainbow-delimiters-depth-9">(</span>eq <span class="rainbow-delimiters-depth-1">(</span>first point<span class="rainbow-delimiters-depth-1">)</span> turn<span class="rainbow-delimiters-depth-9">)</span>
+                             <span class="constant">onclick</span>=<span class="rainbow-delimiters-depth-8">(</span><span class="keyword">when</span> <span class="rainbow-delimiters-depth-9">(</span>eq <span class="rainbow-delimiters-depth-1">(</span>point-color point<span class="rainbow-delimiters-depth-1">)</span> turn<span class="rainbow-delimiters-depth-9">)</span>
                                        <span class="string">"rr(this)"</span><span class="rainbow-delimiters-depth-8">)</span>
                              <span class="constant">selected</span>=<span class="rainbow-delimiters-depth-8">(</span><span class="keyword">when</span> <span class="rainbow-delimiters-depth-9">(</span>and <span class="rainbow-delimiters-depth-1">(</span>numberp pip<span class="rainbow-delimiters-depth-1">)</span>
                                                  <span class="rainbow-delimiters-depth-1">(</span>= pip index<span class="rainbow-delimiters-depth-1">)</span>
@@ -492,9 +497,12 @@ backgammon-tutorial
   <code>get-point-move</code>
   returns
   <code>nil</code>.
-  If the pip can move then it returns a list of the dice required to move there.
+  If the pip can move then it returns a list of the dice required to move there like so:
+  <code>(4 6)</code>
+  meaning that the selected pip will have to move 4 spaces then 6 spaces to get to the selected point.           
   We will use this dice list with the pip as our
-  <code>value</code> attribute.
+  <code>value</code>
+  attribute.
   Here it will be a serialized list, but could just as easily be a JSON if you so desire.
 </p>
 <pre class="code-sample">
@@ -502,7 +510,7 @@ backgammon-tutorial
   ...
   <span class="rainbow-delimiters-depth-2">(</span><span class="keyword">let</span> <span class="rainbow-delimiters-depth-3">(</span><span class="rainbow-delimiters-depth-4">(</span>turn <span class="rainbow-delimiters-depth-5">(</span>turn game<span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span>
         <span class="rainbow-delimiters-depth-4">(</span><mark>move</mark> <span class="rainbow-delimiters-depth-5">(</span>get-point-move game index pip<span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span>
-    &lt;<span class="builtin">:point</span> <span class="constant">color</span>=<span class="rainbow-delimiters-depth-3">(</span>first point<span class="rainbow-delimiters-depth-3">)</span>
+    &lt;<span class="builtin">:point</span> <span class="constant">color</span>=<span class="rainbow-delimiters-depth-3">(</span>point-color point<span class="rainbow-delimiters-depth-3">)</span>
             <span class="constant">action</span>=point-action
             <span class="constant">value</span>=<span class="rainbow-delimiters-depth-3">(</span><span class="keyword">when</span> move
                     <span class="rainbow-delimiters-depth-4">(</span>list pip move<span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span>
@@ -572,7 +580,7 @@ backgammon-tutorial
   You should now have a fully functioning backgammon game. In the next section, we will make our server handle multiple backgammon games that that can be joined with a code.
 </p>
 <p>
-  For fun we can add a win condition message.
+  For fun we can add a win condition message. The ids are just for CSS to target.
 </p>
 <pre class="code-sample">
 <span class="rainbow-delimiters-depth-1">(</span><span class="keyword">let*</span> <span class="rainbow-delimiters-depth-2">(</span><span class="comment-delimiter">;; </span><span class="comment">local variables go here
@@ -585,15 +593,29 @@ backgammon-tutorial
 <h2>Multi-Player</h2>
 <p>
   Until now we only have a single backgammon game object.
-  To have multiple games, we have to we have to (1) have a way to identify which game a player is trying to join and (2) keep track of which players are in which games.
+  To have multiple games, we have to (1) have a way to identify which game a player is trying to join and (2) keep track of which players are in which games.
   We can do this with a hash table where the keys are randomly generated alphanumeric strings and the value is a list who's first elements is the backgammon game object and subsequent elements are the players who have joined that game (so we can know who to send updates to when someone makes a move).
 </p>
+<p>
+  Since the structure of our game has changed, we can update our game accessor functions.
+</p>
+
 <pre class="code-sample">
 <strike><span class="rainbow-delimiters-depth-1">(</span><span class="keyword">defparameter</span> <span class="variable-name">game</span> <span class="rainbow-delimiters-depth-2">(</span>make-instance <span class="extra">'</span>backgammon<span class="rainbow-delimiters-depth-2">)</span>
   <span class="doc">"The backgammon game object."</span><span class="rainbow-delimiters-depth-1">)</span></strike>
 
 <span class="rainbow-delimiters-depth-1">(</span><span class="keyword">defparameter</span> <span class="variable-name">*games*</span> <span class="rainbow-delimiters-depth-2">(</span>make-hash-table <span class="builtin">:test</span> <span class="extra">#'</span>equalp<span class="rainbow-delimiters-depth-2">)</span>
-  <span class="doc">"Key: gameid, Value: (list backgammon players...)"</span><span class="rainbow-delimiters-depth-1">)</span></pre>
+  <span class="doc">"Key: gameid, Value: (list backgammon players...)"</span><span class="rainbow-delimiters-depth-1">)</span>
+
+<span class="rainbow-delimiters-depth-1">(</span><span class="keyword">defun</span> <span class="function-name">get-game</span> <span class="rainbow-delimiters-depth-2">(</span>gameid<span class="rainbow-delimiters-depth-2">)</span>
+  <span class="rainbow-delimiters-depth-2">(</span>gethash gameid *games*<span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span>
+
+<span class="rainbow-delimiters-depth-1">(</span><span class="keyword">defun</span> <span class="function-name">set-game</span> <span class="rainbow-delimiters-depth-2">(</span>gameid new-game<span class="rainbow-delimiters-depth-2">)</span>
+  <span class="rainbow-delimiters-depth-2">(</span><span class="keyword">if</span> <span class="rainbow-delimiters-depth-3">(</span>gethash gameid *games*<span class="rainbow-delimiters-depth-3">)</span>
+      <span class="rainbow-delimiters-depth-3">(</span>setf <span class="rainbow-delimiters-depth-4">(</span>first <span class="rainbow-delimiters-depth-5">(</span>gethash gameid *games*<span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span>
+            new-game<span class="rainbow-delimiters-depth-3">)</span>
+      <span class="rainbow-delimiters-depth-3">(</span>setf <span class="rainbow-delimiters-depth-4">(</span>gethash gameid *games*<span class="rainbow-delimiters-depth-4">)</span>
+            <span class="rainbow-delimiters-depth-4">(</span>list new-game<span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span><span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span></pre>
 <h3>Multiple Games</h3>
 <p>
    We need a function to generate a alphanumeric key. It will have a length and someway to make sure that the generated key doesn't belong to an existing game. Numbers and letters have an equal chance of appearing. 
@@ -626,19 +648,15 @@ backgammon-tutorial
 </p>
 <pre class="code-sample">
 <span class="comment-delimiter">;; </span><span class="comment">ensure game exists for gameid
-</span><span class="rainbow-delimiters-depth-1">(</span><span class="keyword">unless</span> <span class="rainbow-delimiters-depth-2">(</span>gethash gameid *games*<span class="rainbow-delimiters-depth-2">)</span>
-  <span class="rainbow-delimiters-depth-2">(</span>setf <span class="rainbow-delimiters-depth-3">(</span>gethash gameid *games*<span class="rainbow-delimiters-depth-3">)</span>
-        <span class="rainbow-delimiters-depth-3">(</span>list <span class="rainbow-delimiters-depth-4">(</span>make-instance <span class="extra">'</span>backgammon<span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span><span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span></pre>
+</span><span class="rainbow-delimiters-depth-1">(</span><span class="keyword">unless</span> <span class="rainbow-delimiters-depth-2">(</span>get-game gameid<span class="rainbow-delimiters-depth-2">)</span>
+  <span class="rainbow-delimiters-depth-2">(</span>set-game gameid <span class="rainbow-delimiters-depth-3">(</span>make-instance <span class="extra">'</span>backgammon<span class="rainbow-delimiters-depth-3">)</span><span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span></pre>
 
 <p>
-  We can make local variable to access this game, but everywhere before that (except in the <em>reduce</em>) you will need to replace
-  <code>game</code>
-  with
-  <code>(first (gethash gameid *games*))</code>.
+  We can make local variable to access this game, but everywhere before that make sure to add the game id to as an argument to the get and set game functions.
 </p>
 <pre class="code-sample">
 <span class="rainbow-delimiters-depth-1">(</span><span class="keyword">let*</span> <span class="rainbow-delimiters-depth-2">(</span><span class="comment-delimiter">;; </span><span class="comment">local variables go here
-</span>       <span class="rainbow-delimiters-depth-3">(</span>game <span class="rainbow-delimiters-depth-4">(</span>first <span class="rainbow-delimiters-depth-5">(</span>gethash gameid *games*<span class="rainbow-delimiters-depth-5">)</span><span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span></pre>
+</span>       <span class="rainbow-delimiters-depth-3">(</span>game <span class="rainbow-delimiters-depth-4">(</span>get-game gameid<span class="rainbow-delimiters-depth-4">)</span><span class="rainbow-delimiters-depth-3">)</span></pre>
 <h3>Players Joining Games</h3>
 <p>
   Players can get the correct game with the game id, but they are not added to the game's list in the hash table and they won't receive updates when other players make moves. ISSR provides
@@ -784,8 +802,8 @@ We will let the user customize the color for each player, so that will require t
   Now when we are generating the HTML for the dice we can use this function to make fancy dice.
 </p>
 <pre class="code-sample">
-<strike><span class="extra">,</span><span class="rainbow-delimiters-depth-1">(</span>first die<span class="rainbow-delimiters-depth-1">)</span></strike>
-<span class="extra">,</span><span class="rainbow-delimiters-depth-1">(</span>die-face <span class="rainbow-delimiters-depth-2">(</span>first die<span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span></pre>
+<strike><span class="extra">,</span><span class="rainbow-delimiters-depth-1">(</span>die-value die<span class="rainbow-delimiters-depth-1">)</span></strike>
+<span class="extra">,</span><span class="rainbow-delimiters-depth-1">(</span>die-face <span class="rainbow-delimiters-depth-2">(</span>die-value die<span class="rainbow-delimiters-depth-2">)</span><span class="rainbow-delimiters-depth-1">)</span></pre>
 <h2>What Is Next?</h2>
 <ul>
   <li>Add undo functionality</li>
@@ -793,5 +811,5 @@ We will let the user customize the color for each player, so that will require t
   <li>Use drag & drop events to move pips</li>
   <li>Make your next website with ISSR!</li>
 </ul>
-<hr/>  
+<hr/>
 </body>
