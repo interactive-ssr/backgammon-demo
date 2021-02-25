@@ -272,3 +272,23 @@
                         index)
                  rolls))
              (get-moves game pip))))
+(defmethod all-dice ((game backgammon))
+  (sort (append (map 'list
+                     (lambda (die) (list die nil))
+                     (dice game))
+                (map 'list
+                     (lambda (die) (list die t))
+                     (used-dice game)))
+        #'< :key #'first))
+
+(defun die-value (die)
+  (first die))
+
+(defun die-used-p (die)
+  (second die))
+
+(defun point-color (point)
+  (first point))
+
+(defun point-pip-count (point)
+  (second point))
