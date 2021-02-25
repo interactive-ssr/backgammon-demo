@@ -32,6 +32,16 @@
 (defparameter *games* (make-hash-table :test #'equalp)
   "Key: gameid, Value: (list backgammon players...)")
 
+(defun get-game (gameid)
+  (gethash gameid *games*))
+
+(defun set-game (gameid new-game)
+  (if (gethash gameid *games*)
+      (setf (first (gethash gameid *games*))
+            new-game)
+      (setf (gethash gameid *games*)
+            (list new-game))))
+
 (defun random-alphanum (length &key not-in)
   "Return alphanumeric string of length LENGTH not contained in NOT-IN."
   (loop with alphanum
@@ -122,13 +132,12 @@
                         (cookie-in "black-color")
                         "#292929"))
   ;; ensure game exists for gameid
-  (unless (gethash gameid *games*)
-    (setf (gethash gameid *games*)
-          (list (make-instance 'backgammon))))
+  (unless (get-game gameid)
+    (set-game gameid (make-instance 'backgammon)))
   ;; roll dice
   (when (string= t roll)
-    (setf (first (gethash gameid *games*))
-          (roll-dice (first (gethash gameid *games*)))))
+    (set-game gameid
+              (roll-dice (get-game gameid))))
   ;; move pip
   (unless (str:emptyp move)
     (multiple-value-bind (pip dice)
@@ -144,22 +153,16 @@
                      (values-list game--spot)
                    (list (move game spot die)
                          (valid-move-p game spot die))))
-               dice :initial-value (list (first (gethash gameid *games*)) pip))))
+               dice :initial-value (list (get-game gameid) pip))))
         (when new-game
-          (setf (first (gethash gameid *games*))
-                (first new-game))))))
+          (set-game gameid)
+                (first new-game)))))
   (let* (;; local variables go here
-         (game (first (gethash gameid *games*)))
+         (game (get-game gameid))
          (players (rest (gethash gameid *games*)))
          (pip-num  (parse-integer (or pip "")
                                 :junk-allowed t))
-         (dice (sort (append (map 'list
-                                  (lambda (die) (list die nil))
-                                  (dice game))
-                             (map 'list
-                                  (lambda (die) (list die t))
-                                  (used-dice game)))
-                     #'< :key #'first))
+         (dice (all-dice game))
          (winner (finished-p game)))
     (with-slots (points turn white-goal white-bar black-goal black-bar) game
       ;; update other players
@@ -204,8 +207,8 @@
                         <:die style=(unless (str:emptyp roll)
                                       (format nil "animation: .1s roll linear ~a;"
                                               (+ (random 8) 2)))
-                              disabled=(when (or (second die) (not (can-move-p game))) t)>
-                          ,(die-face (first die))
+                              disabled=(when (or (die-used-p die) (not (can-move-p game))) t)>
+                          ,(die-face (die-value die))
                         </:die>)
                          dice)
              </:dice>
@@ -291,7 +294,7 @@
 (bordeaux-threads:make-thread
  (lambda ()
    (dolist (gameid (alexandria:hash-table-keys *games*))
-     (let ((game (first (gethash gameid *games*))))
+     (let ((game (get-game gameid)))
        (when (or (null game)
                  (< 86400
                     (- (get-universal-time)
