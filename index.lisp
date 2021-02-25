@@ -26,7 +26,7 @@
   "Key: gameid, Value: (list backgammon players...)")
 
 (defun get-game (gameid)
-  (gethash gameid *games*))
+  (first (gethash gameid *games*)))
 
 (defun set-game (gameid new-game)
   (if (gethash gameid *games*)
@@ -148,8 +148,8 @@
                          (valid-move-p game spot die))))
                dice :initial-value (list (get-game gameid) pip))))
         (when new-game
-          (set-game gameid)
-                (first new-game)))))
+          (set-game gameid
+                (first new-game))))))
   (let* (;; local variables go here
          (game (get-game gameid))
          (players (rest (gethash gameid *games*)))

@@ -65,7 +65,7 @@
 (defmethod finished-p ((game backgammon))
   (cond ((= 15 (white-goal game)) :white)
         ((= 15 (black-goal game)) :black)))
-(defmethod point-color ((game backgammon) point)
+(defmethod game-point-color ((game backgammon) point)
   (cond ((and (= +black-bar+ point))
          (when (< 0 (black-bar game))
            :black))
@@ -117,7 +117,7 @@
 (defmethod valid-move-p ((game backgammon) point die)
   ;; make sure dice are valid
   (with-slots (turn points) game
-    (let ((color (point-color game point)))
+    (let ((color (game-point-color game point)))
       (and (not (finished-p game))
            point (member die (dice game))
            turn
@@ -191,9 +191,9 @@
 (defmethod move ((game backgammon) point die)
   (with-slots (points turn) game
     (if (valid-move-p game point die)
-        (let* ((color (point-color game point))
+        (let* ((color (game-point-color game point))
               (new-point (valid-move-p game point die))
-               (new-color (or (point-color game new-point)
+               (new-color (or (game-point-color game new-point)
                               (when (= new-point +white-goal+)
                                :white)
                              (when (= new-point +black-goal+)
@@ -242,7 +242,7 @@
                         collect combo
                         if (= 2 (length combo))
                           collect (reverse combo)))
-          (color (point-color game point)))
+          (color (game-point-color game point)))
       (when color
         (remove-if
          #'null
